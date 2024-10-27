@@ -119,6 +119,7 @@ uint32_t SwitchNode::CalculateInterfaceLoad(uint32_t interface) {
     return device->GetQueue()->GetNBytesTotal();  // also used in HPCC
 }
 
+// DRILL（d，m），从n个转发端口随机选取d个，再从上个时间间隔中m个最短队列端口中，m和d一起选一个最短队列端口，从该端口转发  drill(2,1)
 uint32_t SwitchNode::DoLbDrill(Ptr<const Packet> p, const CustomHeader &ch,
                                const std::vector<int> &nexthops) {
     // find the Egress (output) link with the smallest local Egress Queue length

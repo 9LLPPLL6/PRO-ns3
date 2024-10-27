@@ -676,6 +676,10 @@ def build(bld):
         Logs.warn("No modules were built.  Use waf configure --enable-modules to enable modules.")
         return
 
+    if not env['CXXFLAGS']:
+        env['CXXFLAGS'] = []
+    env['CXXFLAGS'].append('-g')
+    
     bld.env['NS3_MODULES_WITH_TEST_LIBRARIES'] = []
     bld.env['NS3_ENABLED_MODULE_TEST_LIBRARIES'] = []
     bld.env['NS3_SCRIPT_DEPENDENCIES'] = []

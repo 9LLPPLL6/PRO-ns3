@@ -62,6 +62,7 @@ if __name__ == "__main__":
 		cdf.append([x,y])
 
 	# create a custom random generator, which takes a cdf, and generate number according to the cdf
+	# check the legitimacy of the cdf
 	customRand = CustomRand()
 	if not customRand.setCdf(cdf):
 		print("Error: Not valid cdf")

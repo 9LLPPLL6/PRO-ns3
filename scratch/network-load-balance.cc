@@ -54,7 +54,7 @@ using namespace std;
 NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 
 /*------Load balancing parameters-----*/
-// mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave
+// mode for load balancer, 0: flow ECMP, 2: DRILL, 3: Conga, 6: Letflow, 9: ConWeave, 12: Pro
 uint32_t lb_mode = 0;
 
 // Conga params (based on paper recommendation)
@@ -412,7 +412,8 @@ void conweave_history_print() {
 
     std::cout << "\n------------ConWeave History---------------" << std::endl;
     std::cout << "Number of INIT's Reply sent (RTT_REPLY):" << ConWeaveRouting::m_nReplyInitSent
-              << "\nNumber of Timely RTT_REPLY (INIT's Reply):" << ConWeaveRouting::m_nTimelyInitReplied
+              << "\nNumber of Timely RTT_REPLY (INIT's Reply):"
+              << ConWeaveRouting::m_nTimelyInitReplied
               << "\nNumber of TAIL's Reply Sent (CLEAR):" << ConWeaveRouting::m_nReplyTailSent
               << "\nNumber of Timely CLEAR (TAIL's Reply):" << ConWeaveRouting::m_nTimelyTailReplied
               << "\nNumber of NOTIFY Sent:" << ConWeaveRouting::m_nNotifySent
@@ -799,49 +800,33 @@ int main(int argc, char *argv[]) {
                 conf >> v;
                 enable_pfc = v;
                 if (enable_pfc)
-                    std::cerr << "ENABLE_PFC\t\t\t"
-                              << "Yes"
-                              << "\n";
+                    std::cerr << "ENABLE_PFC\t\t\t" << "Yes" << "\n";
                 else
-                    std::cerr << "ENABLE_PFC\t\t\t"
-                              << "No"
-                              << "\n";
+                    std::cerr << "ENABLE_PFC\t\t\t" << "No" << "\n";
             } else if (key.compare("ENABLE_QCN") == 0) {
                 uint32_t v;
                 conf >> v;
                 enable_qcn = v;
                 if (enable_qcn)
-                    std::cerr << "ENABLE_QCN\t\t\t"
-                              << "Yes"
-                              << "\n";
+                    std::cerr << "ENABLE_QCN\t\t\t" << "Yes" << "\n";
                 else
-                    std::cerr << "ENABLE_QCN\t\t\t"
-                              << "No"
-                              << "\n";
+                    std::cerr << "ENABLE_QCN\t\t\t" << "No" << "\n";
             } else if (key.compare("USE_DYNAMIC_PFC_THRESHOLD") == 0) {
                 uint32_t v;
                 conf >> v;
                 use_dynamic_pfc_threshold = v;
                 if (use_dynamic_pfc_threshold)
-                    std::cerr << "USE_DYNAMIC_PFC_THRESHOLD\t"
-                              << "Yes"
-                              << "\n";
+                    std::cerr << "USE_DYNAMIC_PFC_THRESHOLD\t" << "Yes" << "\n";
                 else
-                    std::cerr << "USE_DYNAMIC_PFC_THRESHOLD\t"
-                              << "No"
-                              << "\n";
+                    std::cerr << "USE_DYNAMIC_PFC_THRESHOLD\t" << "No" << "\n";
             } else if (key.compare("CLAMP_TARGET_RATE") == 0) {
                 uint32_t v;
                 conf >> v;
                 clamp_target_rate = v;
                 if (clamp_target_rate)
-                    std::cerr << "CLAMP_TARGET_RATE\t\t"
-                              << "Yes"
-                              << "\n";
+                    std::cerr << "CLAMP_TARGET_RATE\t\t" << "Yes" << "\n";
                 else
-                    std::cerr << "CLAMP_TARGET_RATE\t\t"
-                              << "No"
-                              << "\n";
+                    std::cerr << "CLAMP_TARGET_RATE\t\t" << "No" << "\n";
             } else if (key.compare("PAUSE_TIME") == 0) {
                 double v;
                 conf >> v;
@@ -877,13 +862,9 @@ int main(int argc, char *argv[]) {
                 conf >> v;
                 l2_back_to_zero = v;
                 if (l2_back_to_zero)
-                    std::cerr << "L2_BACK_TO_ZERO\t\t\t"
-                              << "Yes"
-                              << "\n";
+                    std::cerr << "L2_BACK_TO_ZERO\t\t\t" << "Yes" << "\n";
                 else
-                    std::cerr << "L2_BACK_TO_ZERO\t\t\t"
-                              << "No"
-                              << "\n";
+                    std::cerr << "L2_BACK_TO_ZERO\t\t\t" << "No" << "\n";
             } else if (key.compare("TOPOLOGY_FILE") == 0) {
                 std::string v;
                 conf >> v;
@@ -1365,7 +1346,7 @@ int main(int argc, char *argv[]) {
     // manually type BDP
     std::map<std::string, uint32_t> topo2bdpMap;
     topo2bdpMap[std::string("leaf_spine_128_100G_OS2")] = 104000;  // RTT=8320
-    topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;      // RTT=12480 --> all 100G links
+    topo2bdpMap[std::string("fat_k8_100G_OS2")] = 156000;          // RTT=12480 --> all 100G links
 
     // topology_file
     bool found_topo2bdpMap = false;
@@ -1497,7 +1478,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* config load balancer's switches using ToR-to-ToR routing */
-    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9) {  // Conga, Letflow, Conweave
+    if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 ||
+        lb_mode == 12) {  // Conga, Letflow, Conweave
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -1508,6 +1490,7 @@ int main(int argc, char *argv[]) {
                 Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
                 uint32_t hostIP = serverAddress[pair.first].Get();
                 Settings::hostIp2SwitchId[hostIP] = sw->GetId();  // hostIP -> connected switch's ID
+                Settings::SwitchId2hostId[sw->GetId()].push_back(probably_host->GetId());
             }
         }
 
@@ -1571,6 +1554,13 @@ int main(int argc, char *argv[]) {
                                     swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
                                         one_hop_delay * 4;
                                 }
+                                if (lb_mode == 12) {
+                                    for (auto srcHostId : Settings::SwitchId2hostId[swSrcId]) {
+                                        for (auto dstHostId : Settings::SwitchId2hostId[swDstId]) {
+                                            Settings::paths[srcHostId][dstHostId].push_back(pathId);
+                                        }
+                                    }
+                                }
                                 continue;
                             }
 
@@ -1602,6 +1592,15 @@ int main(int argc, char *argv[]) {
                                             .insert(pathId);
                                         swSrc->m_mmu->m_conweaveRouting.m_rxToRId2BaseRTT[swDstId] =
                                             one_hop_delay * 6;
+                                    }
+                                    if (lb_mode == 12) {
+                                        for (auto srcHostId : Settings::SwitchId2hostId[swSrcId]) {
+                                            for (auto dstHostId :
+                                                 Settings::SwitchId2hostId[swDstId]) {
+                                                Settings::paths[srcHostId][dstHostId].push_back(
+                                                    pathId);
+                                            }
+                                        }
                                     }
                                     continue;
                                 }
@@ -1638,6 +1637,16 @@ int main(int argc, char *argv[]) {
                                                 .insert(pathId);
                                             swSrc->m_mmu->m_conweaveRouting
                                                 .m_rxToRId2BaseRTT[swDstId] = one_hop_delay * 8;
+                                        }
+                                        if (lb_mode == 12) {
+                                            for (auto srcHostId :
+                                                 Settings::SwitchId2hostId[swSrcId]) {
+                                                for (auto dstHostId :
+                                                     Settings::SwitchId2hostId[swDstId]) {
+                                                    Settings::paths[srcHostId][dstHostId].push_back(
+                                                        pathId);
+                                                }
+                                            }
                                         }
                                         continue;
                                     } else {
