@@ -69,6 +69,7 @@ class RdmaQueuePair : public Object {
     uint32_t lastPktSize;
     int32_t m_flow_id;
     Time m_timeout;
+    uint32_t pathIndex = 0;
 
     /******************************
      * runtime states

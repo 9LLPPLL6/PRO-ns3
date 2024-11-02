@@ -119,7 +119,8 @@ uint32_t SwitchNode::CalculateInterfaceLoad(uint32_t interface) {
     return device->GetQueue()->GetNBytesTotal();  // also used in HPCC
 }
 
-// DRILL（d，m），从n个转发端口随机选取d个，再从上个时间间隔中m个最短队列端口中，m和d一起选一个最短队列端口，从该端口转发  drill(2,1)
+// DRILL（d，m），从n个转发端口随机选取d个，再从上个时间间隔中m个最短队列端口中，m和d一起选一个最短队列端口，从该端口转发
+// drill(2,1)
 uint32_t SwitchNode::DoLbDrill(Ptr<const Packet> p, const CustomHeader &ch,
                                const std::vector<int> &nexthops) {
     // find the Egress (output) link with the smallest local Egress Queue length
@@ -152,6 +153,23 @@ uint32_t SwitchNode::DoLbConWeave(Ptr<const Packet> p, const CustomHeader &ch,
                                   const std::vector<int> &nexthops) {
     return DoLbFlowECMP(p, ch, nexthops);  // flow ECMP (dummy)
 }
+
+/*------------Pro---------------------------------*/
+uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
+                             const std::vector<int> &nexthops) {
+    if(ch.l3Prot != 0x11) // not udp
+        return DoLbFlowECMP(p, ch, nexthops);
+    if (this->m_isToR) {
+        uint32_t dstip = ch.dip;
+        uint32_t switchId = Settings::hostIp2SwitchId[dstip];
+        if(this->GetId() == switchId) {
+            return DoLbFlowECMP(p, ch, nexthops);
+        }
+        return (uint32_t)((uint8_t *)(&ch.udp.sport))[0];
+    }
+    return (uint32_t)((uint8_t *)(&ch.udp.dport))[1];  // aggr
+}
+
 /*----------------------------------*/
 
 void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex) {
@@ -273,6 +291,8 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
             return DoLbLetflow(p, ch, nexthops);
         case 9:
             return DoLbConWeave(p, ch, nexthops); /** DUMMY: Do ECMP */
+        case 12:
+                return DoLbPro(p, ch, nexthops);
         default:
             std::cout << "Unknown lb_mode(" << Settings::lb_mode << ")" << std::endl;
             assert(false);
@@ -291,9 +311,10 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
     /** NOTE:
      * ConWeave control packets have the high priority as ACK/NACK/PFC/etc with qIndex = 0.
      */
-    if (inDev == Settings::CONWEAVE_CTRL_DUMMY_INDEV) { // sanity check
+    if (inDev == Settings::CONWEAVE_CTRL_DUMMY_INDEV) {  // sanity check
         // ConWeave reply is on ACK protocol with high priority, so qIndex should be 0
-        assert(qIndex == 0 && m_ackHighPrio == 1 && "ConWeave's reply packet follows ACK, so its qIndex should be 0");
+        assert(qIndex == 0 && m_ackHighPrio == 1 &&
+               "ConWeave's reply packet follows ACK, so its qIndex should be 0");
     }
 
     if (qIndex != 0) {  // not highest priority

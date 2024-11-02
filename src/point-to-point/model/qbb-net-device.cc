@@ -45,6 +45,7 @@
 #include "ns3/point-to-point-channel.h"
 #include "ns3/pointer.h"
 #include "ns3/ppp-header.h"
+#include "ns3/pro-routing.h"
 #include "ns3/qbb-channel.h"
 #include "ns3/qbb-header.h"
 #include "ns3/random-variable.h"
@@ -64,7 +65,7 @@ namespace ns3 {
 extern std::unordered_map<unsigned, Time> acc_pause_time;
 
 // uint32_t RdmaEgressQueue::ack_q_idx = 3; // 3: Middle priority
-uint32_t RdmaEgressQueue::ack_q_idx = 0; // 0: high priority
+uint32_t RdmaEgressQueue::ack_q_idx = 0;  // 0: high priority
 // RdmaEgressQueue
 TypeId RdmaEgressQueue::GetTypeId(void) {
     static TypeId tid =
@@ -262,6 +263,26 @@ void QbbNetDevice::DequeueAndTransmit(void) {
         if (qIndex != -1024) {
             if (qIndex == -1) {  // high prio
                 p = m_rdmaEQ->DequeueQindex(qIndex);
+                if(Settings::lb_mode == 12) {  //pro
+                    CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header |
+                                    CustomHeader::L4_Header);
+                    p->RemoveHeader(ch);
+                    if(ch.l3Prot == 0x11) { //udp
+                        Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
+                        uint32_t srcip = ch.sip;
+                        uint32_t dstip = ch.dip;
+                        uint32_t srcid = Settings::hostIp2IdMap[srcip];
+                        uint32_t dstid = Settings::hostIp2IdMap[dstip];
+                        if(srcid != dstid) {
+                            calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
+                            auto it = ProRouting::paths[srcid][dstid].begin();
+                            std::advance(it, qp->pathIndex);
+                            uint32_t path = *it;
+                            ch.udp.sport = ((uint16_t *)(&path))[0];
+                        }
+                    }
+                    p->AddHeader(ch);
+                }
                 m_traceDequeue(p, 0);
                 TransmitStart(p);
                 return;
@@ -269,6 +290,28 @@ void QbbNetDevice::DequeueAndTransmit(void) {
             // a qp dequeue a packet
             Ptr<RdmaQueuePair> lastQp = m_rdmaEQ->GetQp(qIndex);
             p = m_rdmaEQ->DequeueQindex(qIndex);
+
+            // pro load balance
+            if (Settings::lb_mode == 12) {
+                CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header |
+                                CustomHeader::L4_Header);
+                p->RemoveHeader(ch);
+                if(ch.l3Prot == 0x11) { //udp
+                    Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
+                    uint32_t srcip = ch.sip;
+                    uint32_t dstip = ch.dip;
+                    uint32_t srcid = Settings::hostIp2IdMap[srcip];
+                    uint32_t dstid = Settings::hostIp2IdMap[dstip];
+                    if(srcid != dstid) {
+                        calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
+                        auto it = ProRouting::paths[srcid][dstid].begin();
+                        std::advance(it, qp->pathIndex);
+                        uint32_t path = *it;
+                        ch.udp.sport = ((uint16_t *)(&path))[0];
+                    }
+                }
+                p->AddHeader(ch);
+            }
 
             // transmit
             m_traceQpDequeue(p, lastQp);
@@ -511,5 +554,18 @@ void QbbNetDevice::UpdateNextAvail(Time t) {
         Time delta = t < Simulator::Now() ? Time(0) : t - Simulator::Now();
         m_nextSend = Simulator::Schedule(delta, &QbbNetDevice::DequeueAndTransmit, this);
     }
+}
+
+void QbbNetDevice::calc_path(unsigned qIndex, uint32_t span) {
+    Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
+    if (span % 2 == 0) {
+        span += 1;
+    }
+    if (qp->pathIndex != 0) {  // is inited
+        qp->pathIndex = (qp->pathIndex + span) % M;
+    } else {  // not inited
+        qp->pathIndex = ProRouting::pro_c % M;
+    }
+    ProRouting::pro_c = qp->pathIndex + 1;
 }
 }  // namespace ns3

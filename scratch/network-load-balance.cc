@@ -43,6 +43,7 @@
 #include "ns3/letflow-routing.h"
 #include "ns3/packet.h"
 #include "ns3/point-to-point-helper.h"
+#include "ns3/pro-routing.h"
 #include "ns3/qbb-helper.h"
 #include "ns3/qbb-net-device.h"
 #include "ns3/rdma-hw.h"
@@ -1479,7 +1480,7 @@ int main(int argc, char *argv[]) {
 
     /* config load balancer's switches using ToR-to-ToR routing */
     if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 ||
-        lb_mode == 12) {  // Conga, Letflow, Conweave
+        lb_mode == 12) {  // Conga, Letflow, Conweave, Pro
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -1490,7 +1491,7 @@ int main(int argc, char *argv[]) {
                 Ptr<SwitchNode> sw = DynamicCast<SwitchNode>(probably_switch);
                 uint32_t hostIP = serverAddress[pair.first].Get();
                 Settings::hostIp2SwitchId[hostIP] = sw->GetId();  // hostIP -> connected switch's ID
-                Settings::SwitchId2hostId[sw->GetId()].push_back(probably_host->GetId());
+                ProRouting::SwitchId2hostId[sw->GetId()].push_back(probably_host->GetId());
             }
         }
 
@@ -1555,9 +1556,12 @@ int main(int argc, char *argv[]) {
                                         one_hop_delay * 4;
                                 }
                                 if (lb_mode == 12) {
-                                    for (auto srcHostId : Settings::SwitchId2hostId[swSrcId]) {
-                                        for (auto dstHostId : Settings::SwitchId2hostId[swDstId]) {
-                                            Settings::paths[srcHostId][dstHostId].push_back(pathId);
+                                    for (auto srcHostId : ProRouting::SwitchId2hostId[swSrcId]) {
+                                        for (auto dstHostId :
+                                             ProRouting::SwitchId2hostId[swDstId]) {
+                                            ProRouting::paths[srcHostId][dstHostId].insert(
+                                                pathId);
+                                            //ProRouting::path_num += 1;
                                         }
                                     }
                                 }
@@ -1594,13 +1598,18 @@ int main(int argc, char *argv[]) {
                                             one_hop_delay * 6;
                                     }
                                     if (lb_mode == 12) {
-                                        for (auto srcHostId : Settings::SwitchId2hostId[swSrcId]) {
-                                            for (auto dstHostId :
-                                                 Settings::SwitchId2hostId[swDstId]) {
-                                                Settings::paths[srcHostId][dstHostId].push_back(
-                                                    pathId);
-                                            }
-                                        }
+                                        // for (auto srcHostId
+                                        // :ProRouting::SwitchId2hostId[swSrcId]) {
+                                        //     for (auto dstHostId
+                                        //     :ProRouting::SwitchId2hostId[swDstId]) {
+                                        //         ProRouting::paths[srcHostId][dstHostId].push_back(pathId);
+                                        //         ProRouting::path_num += 1;
+                                        //     }
+                                        // }
+                                        std::cout << endl;
+                                        std::cout << "ERROR : pro not support Too large topology"
+                                                  << endl;
+                                        exit(1);
                                     }
                                     continue;
                                 }
@@ -1639,14 +1648,20 @@ int main(int argc, char *argv[]) {
                                                 .m_rxToRId2BaseRTT[swDstId] = one_hop_delay * 8;
                                         }
                                         if (lb_mode == 12) {
-                                            for (auto srcHostId :
-                                                 Settings::SwitchId2hostId[swSrcId]) {
-                                                for (auto dstHostId :
-                                                     Settings::SwitchId2hostId[swDstId]) {
-                                                    Settings::paths[srcHostId][dstHostId].push_back(
-                                                        pathId);
-                                                }
-                                            }
+                                            // for (auto srcHostId :
+                                            //      ProRouting::SwitchId2hostId[swSrcId]) {
+                                            //     for (auto dstHostId :
+                                            //          ProRouting::SwitchId2hostId[swDstId]) {
+                                            //         ProRouting::paths[srcHostId][dstHostId]
+                                            //             .push_back(pathId);
+                                            //         ProRouting::path_num += 1;
+                                            //     }
+                                            // }
+                                            std::cout << endl;
+                                            std::cout
+                                                << "ERROR : pro not support Too large topology"
+                                                << endl;
+                                            exit(1);
                                         }
                                         continue;
                                     } else {

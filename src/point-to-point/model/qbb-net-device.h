@@ -157,11 +157,14 @@ public:
    /// Resume a paused queue and call DequeueAndTransmit()
    virtual void Resume(unsigned qIndex);
 
+   ///  calculate the path for the pro load balance
+   void calc_path(unsigned qIndex, uint32_t span);
+
    /**
-   * The queues for each priority class.
-   * @see class Queue
-   * @see class InfiniteQueue
-   */
+    * The queues for each priority class.
+    * @see class Queue
+    * @see class InfiniteQueue
+    */
    Ptr<BEgressQueue> m_queue;
 
    Ptr<QbbChannel> m_channel;
