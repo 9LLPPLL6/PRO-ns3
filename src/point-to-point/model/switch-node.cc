@@ -165,9 +165,9 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
         if(this->GetId() == switchId) {
             return DoLbFlowECMP(p, ch, nexthops);
         }
-        return (uint32_t)((uint8_t *)(&ch.udp.sport))[0];
+        return ((uint8_t *)&ch.udp.sport)[0];
     }
-    return (uint32_t)((uint8_t *)(&ch.udp.dport))[1];  // aggr
+    return ((uint8_t *)&ch.udp.dport)[1];  // aggr
 }
 
 /*----------------------------------*/
@@ -292,7 +292,7 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
         case 9:
             return DoLbConWeave(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 12:
-                return DoLbPro(p, ch, nexthops);
+            return DoLbPro(p, ch, nexthops);
         default:
             std::cout << "Unknown lb_mode(" << Settings::lb_mode << ")" << std::endl;
             assert(false);

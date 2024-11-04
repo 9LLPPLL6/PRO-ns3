@@ -271,9 +271,11 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                         Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
                         uint32_t srcip = ch.sip;
                         uint32_t dstip = ch.dip;
+                        uint32_t srcswid = Settings::hostIp2SwitchId[srcip];
+                        uint32_t dstswid = Settings::hostIp2SwitchId[dstip];
                         uint32_t srcid = Settings::hostIp2IdMap[srcip];
                         uint32_t dstid = Settings::hostIp2IdMap[dstip];
-                        if(srcid != dstid) {
+                        if(srcid != dstid && srcswid != dstswid) {
                             calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
                             auto it = ProRouting::paths[srcid][dstid].begin();
                             std::advance(it, qp->pathIndex);
@@ -300,9 +302,11 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                     Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
                     uint32_t srcip = ch.sip;
                     uint32_t dstip = ch.dip;
+                    uint32_t srcswid = Settings::hostIp2SwitchId[srcip];
+                    uint32_t dstswid = Settings::hostIp2SwitchId[dstip];
                     uint32_t srcid = Settings::hostIp2IdMap[srcip];
                     uint32_t dstid = Settings::hostIp2IdMap[dstip];
-                    if(srcid != dstid) {
+                    if(srcid != dstid && srcswid != dstswid) {
                         calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
                         auto it = ProRouting::paths[srcid][dstid].begin();
                         std::advance(it, qp->pathIndex);
