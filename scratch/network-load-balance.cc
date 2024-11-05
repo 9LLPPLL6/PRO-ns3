@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <iterator>
 
 #include "ns3/applications-module.h"
 #include "ns3/broadcom-node.h"
@@ -1541,6 +1542,8 @@ int main(int argc, char *argv[]) {
                                 path_ports[0] = (uint8_t)outPort1;
                                 path_ports[1] = (uint8_t)outPort2;
                                 pathId = *((uint32_t *)path_ports);
+                                // std::cerr << "outport1: " << outPort1 << " outport2: " << outPort2
+                                        //   << " pathId: " << pathId << std::endl;
                                 if (lb_mode == 3) {
                                     swSrc->m_mmu->m_congaRouting.m_congaRoutingTable[swDstId]
                                         .insert(pathId);
@@ -1676,6 +1679,23 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        //debug paths
+        // for(auto a: ProRouting::paths) {
+        //     for(auto b: a.second) {
+        //         for(auto c: b.second) {
+        //             std::cout << "path: " << a.first << " -> " << b.first << " : " << c << std::endl;
+        //             std::cerr << "16: " << ((uint16_t *)&c)[0] << " " 
+        //                       <<((uint16_t *)&c)[1]
+        //                       << endl;
+        //             std::cout << "outport1: " << (uint32_t)((uint8_t *)&c)[0]
+        //                       << " outport2: " << (uint32_t)((uint8_t *)&c)[1]
+        //                       << " outport3: " << (uint32_t)((uint8_t *)&c)[2]
+        //                       << " outport4: " << (uint32_t)((uint8_t *)&c)[3] << std::endl;
+                    
+        //         }
+        //     }
+        // }
+
         // m_outPort2BitRateMap - only for Conga
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node
             if (i->first->GetNodeType() == 1) {                    // switch
@@ -1804,10 +1824,23 @@ int main(int argc, char *argv[]) {
     Simulator::Schedule(Seconds(flowgen_start_time), &periodic_monitoring, voq_output,
                         voq_detail_output, uplink_output, conn_output, &lb_mode);
 
-    //
-    // Now, do the actual simulation.
-    //
-    std::cout << "------------------------------------------" << std::endl;
+    // debug
+    // for (int i = 0; i < node_num; i++) {
+    //     if (n.Get(i)->GetNodeType() == 1) { //switch
+    //         auto swNode = DynamicCast<SwitchNode>(n.Get(i));
+    //         std::cerr << "Switch " << i << " istor: " << swNode->m_isToR  << std::endl;
+    //         std::cerr << "netdevice:"  << std::endl;
+    //         for (int j = 0; j < swNode->GetNDevices(); j++) {
+    //             auto dev = swNode->GetDevice(j);
+    //             std::cerr << "  " << j << " Qbb: " << dev->IsQbb() << std::endl;
+    //         } 
+    //     }
+    // }
+
+        //
+        // Now, do the actual simulation.
+        //
+        std::cout << "------------------------------------------" << std::endl;
     std::cout << "Running Simulation.\n";
     fflush(stdout);
     NS_LOG_INFO("Run Simulation.");

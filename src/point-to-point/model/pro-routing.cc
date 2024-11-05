@@ -19,6 +19,8 @@ std::map<uint32_t, std::vector<uint32_t>> ProRouting::SwitchId2hostId;
 std::map<uint32_t, std::map<uint32_t, std::set<uint32_t>>> ProRouting::paths;
 uint32_t ProRouting::pro_c = 0;
 uint32_t ProRouting::path_num = 0;
+std::map<uint64_t, uint32_t> ProRouting::packet2path;
+// bool ProRouting::ispro = false;
 
 ProRouting::ProRouting() {}
 ProRouting::~ProRouting(){}

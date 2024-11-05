@@ -30,8 +30,10 @@ class ProRouting : public Object {
     ProRouting();
     ~ProRouting();
 
+    // static bool ispro;
     static std::map<uint32_t, std::vector<uint32_t>> SwitchId2hostId;  // connected Switch's Id -> host's id
     static std::map<uint32_t, std::map<uint32_t, std::set<uint32_t>>> paths;    // <srcid,dstid> -> paths
     static uint32_t path_num;
     static uint32_t pro_c;  // to Inter-QP round robin
+    static std::map<uint64_t, uint32_t> packet2path;  // packet -> path
 };

@@ -280,7 +280,8 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                             auto it = ProRouting::paths[srcid][dstid].begin();
                             std::advance(it, qp->pathIndex);
                             uint32_t path = *it;
-                            ch.udp.sport = ((uint16_t *)(&path))[0];
+                            // ch.udp.sport = ((uint16_t *)(&path))[0];
+                            ProRouting::packet2path[p->GetUid()] = path;
                         }
                     }
                     p->AddHeader(ch);
@@ -311,7 +312,9 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                         auto it = ProRouting::paths[srcid][dstid].begin();
                         std::advance(it, qp->pathIndex);
                         uint32_t path = *it;
-                        ch.udp.sport = ((uint16_t *)(&path))[0];
+                        // ch.udp.sport = ((uint16_t *)(&path))[0];
+                        ProRouting::packet2path[p->GetUid()] = path;
+                        // std::cerr << "qbbnetdevice: " << ch.udp.sport << "srcid " << srcid << "dstid " << dstid <<std::endl;
                     }
                 }
                 p->AddHeader(ch);

@@ -15,6 +15,7 @@
 #include "ns3/uinteger.h"
 #include "ppp-header.h"
 #include "qbb-net-device.h"
+#include "pro-routing.h"
 
 namespace ns3 {
 
@@ -165,9 +166,11 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
         if(this->GetId() == switchId) {
             return DoLbFlowECMP(p, ch, nexthops);
         }
-        return ((uint8_t *)&ch.udp.sport)[0];
+        // return (uint32_t)((uint8_t *)&ch.udp.sport)[0];
+        return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[0];
     }
-    return ((uint8_t *)&ch.udp.dport)[1];  // aggr
+    // return (uint32_t)((uint8_t *)&ch.udp.sport)[1];  // aggr
+    return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[1];
 }
 
 /*----------------------------------*/
@@ -350,6 +353,11 @@ void SwitchNode::DoSwitchSend(Ptr<Packet> p, CustomHeader &ch, uint32_t outDev, 
     }
 
     m_devices[outDev]->SwitchSend(qIndex, p, ch);
+    // std::cerr << "outdev: " << outDev << " ";
+    // std::cerr << m_devices[outDev]->IsQbb();
+    // std::cerr << " istor:" << this->m_isToR << " id" << this->m_id << std::endl;
+    // Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(m_devices[outDev]);
+    // dev->SwitchSend(qIndex, p, ch);
 }
 
 void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Packet> p) {
