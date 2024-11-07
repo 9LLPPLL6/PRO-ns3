@@ -21,6 +21,8 @@ uint32_t ProRouting::pro_c = 0;
 uint32_t ProRouting::path_num = 0;
 std::map<uint64_t, uint32_t> ProRouting::packet2path;
 // bool ProRouting::ispro = false;
+double ProRouting::sample_t = 0;
+uint32_t ProRouting::maxdelay = 0;
 
 ProRouting::ProRouting() {}
 ProRouting::~ProRouting(){}

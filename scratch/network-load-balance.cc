@@ -1440,11 +1440,13 @@ int main(int argc, char *argv[]) {
      */
     maxRtt = maxBdp = 0;
     fprintf(stderr, "node_num=%d\n", node_num);
+    uint64_t rtt_sum = 0;
+    int count = 0;
     for (uint32_t i = 0; i < node_num; i++) {
         if (n.Get(i)->GetNodeType() != 0) continue;
         for (uint32_t j = i + 1; j < node_num; j++) {
             if (n.Get(j)->GetNodeType() != 0) continue;
-            uint64_t delay = pairDelay[n.Get(i)][n.Get(j)];
+            uint64_t delay = pairDelay[n.Get(i)][n.Get(j)];  //ns
             uint64_t txDelay = pairTxDelay[n.Get(i)][n.Get(j)];
             uint64_t rtt = delay * 2 + txDelay;
             uint64_t bw = pairBw[n.Get(i)][n.Get(j)];
@@ -1456,10 +1458,16 @@ int main(int argc, char *argv[]) {
 
             if (bdp > maxBdp) maxBdp = bdp;
             if (rtt > maxRtt) maxRtt = rtt;
+
+            rtt_sum += rtt;
+            count++;
         }
     }
     fprintf(stderr, "maxRtt: %lu, maxBdp: %lu\n", maxRtt, maxBdp);
     assert(maxBdp == irn_bdp_lookup);
+
+    // setup the sampling interval of sending packets for pro (s)
+    ProRouting::sample_t = rtt_sum / count / 1000000000;
 
     std::cout << "Configuring switches" << std::endl;
     /* config ToR Switch */
@@ -1788,9 +1796,9 @@ int main(int argc, char *argv[]) {
                             &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
     }
 
-    if (lb_mode == 9) {
-        voq_output = fopen(voq_mon_file.c_str(), "w");                // specific to ConWeave
-        voq_detail_output = fopen(voq_mon_detail_file.c_str(), "w");  // specific to ConWeave
+    if (lb_mode == 9 || lb_mode == 12 || lb_mode == 0) {
+        voq_output = fopen(voq_mon_file.c_str(), "w");                // specific to ConWeave, pro, fecmp
+        voq_detail_output = fopen(voq_mon_detail_file.c_str(), "w");  // specific to ConWeave, pro, fecmp
     }
 
     uplink_output = fopen(uplink_mon_file.c_str(), "w");  // common

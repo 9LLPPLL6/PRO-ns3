@@ -186,6 +186,11 @@ class RdmaHw : public Object {
     Time m_irn_rtoLow;
     Time m_irn_rtoHigh;
     uint32_t m_irn_bdp;
+
+    /**********************
+     * PRO
+     *********************/
+    // void SamplePacket(Ptr<RdmaQueuePair> qp);
 };
 
 } /* namespace ns3 */

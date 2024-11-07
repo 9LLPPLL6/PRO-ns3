@@ -32,6 +32,30 @@ enum CcMode {
     CC_MODE_UNDEFINED = 0,
 };
 
+typedef struct proret{
+    uint32_t startrt; //the start seq of the ret packet
+    uint32_t endrt;
+} proret;
+
+class ProSackManager {
+   private:
+    std::list<std::pair<uint32_t, uint32_t>> m_data;
+
+   public:
+    int socketId{-1};
+
+    ProSackManager();
+    ProSackManager(int flow_id);
+    void sack(uint32_t seq, uint32_t size);  // put blocks
+    size_t discardUpTo(uint32_t seq);        // return number of blocks removed
+    bool IsEmpty();
+    bool blockExists(uint32_t seq, uint32_t size);  // query if block exists inside SACK table
+    bool peekFrontBlock(uint32_t *pseq, uint32_t *psize);
+    size_t getSackBufferOverhead();  // get buffer overhead
+
+    //friend std::ostream &operator<<(std::ostream &os, const IrnSackManager &im);
+};
+
 class IrnSackManager {
    private:
     std::list<std::pair<uint32_t, uint32_t>> m_data;
@@ -133,6 +157,19 @@ class RdmaQueuePair : public Object {
         uint64_t txTotalBytes{0};
     } stat;
 
+    struct {
+        //uint64_t samplet;
+        std::vector<uint32_t> psnlist;
+        std::vector<proret> proretlist;
+        uint32_t maxack;
+        uint32_t lastb;
+        uint32_t curb;
+        //double maxdelay;
+        bool is_recovery;
+        ProSackManager m_sack;
+        uint32_t last_snd_nxt;
+    } proflr;
+
     // Implement Timeout according to IB Spec Vol. 1 C9-139.
     // For an HCA requester using Reliable Connection service, to detect missing responses,
     // every Send queue is required to implement a Transport Timer to time outstanding requests.
@@ -161,6 +198,14 @@ class RdmaQueuePair : public Object {
     inline bool IsFinishedConst() const { return snd_una >= m_size; }
 
     uint64_t HpGetCurWin();  // window size calculated from hp.m_curRate, used by HPCC
+
+    // PROS
+    void SamplePacket();
+    uint32_t TimeRatio(uint32_t psn, uint32_t i);
+    uint32_t GetRePkt(uint32_t lrange, uint32_t rrange);
+    uint32_t SearchLastI(uint32_t psn);
+    uint32_t TimeToPsn(double time);
+    void InsertProRet(uint32_t startrt, uint32_t endrt);
 
     inline uint32_t GetIrnBytesInFlight() const {
         // IRN do not consider SACKed segments for simplicity
@@ -207,6 +252,7 @@ class RdmaRxQueuePair : public Object {  // Rx side queue pair
     uint32_t m_lastNACK;
     EventId QcnTimerEvent;  // if destroy this rxQp, remember to cancel this timer
     IrnSackManager m_irn_sack_;
+    ProSackManager m_pro_sack_;
     int32_t m_flow_id;
 
     static TypeId GetTypeId(void);

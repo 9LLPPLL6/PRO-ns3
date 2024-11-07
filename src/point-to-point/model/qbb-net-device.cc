@@ -276,7 +276,8 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                         uint32_t srcid = Settings::hostIp2IdMap[srcip];
                         uint32_t dstid = Settings::hostIp2IdMap[dstip];
                         if(srcid != dstid && srcswid != dstswid) {
-                            calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
+                            uint32_t size = ProRouting::paths[srcid][dstid].size();
+                            calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN(), size);
                             auto it = ProRouting::paths[srcid][dstid].begin();
                             std::advance(it, qp->pathIndex);
                             uint32_t path = *it;
@@ -308,7 +309,8 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                     uint32_t srcid = Settings::hostIp2IdMap[srcip];
                     uint32_t dstid = Settings::hostIp2IdMap[dstip];
                     if(srcid != dstid && srcswid != dstswid) {
-                        calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN());
+                        uint32_t size = ProRouting::paths[srcid][dstid].size();
+                        calc_path(qIndex, m_rdmaEQ->m_qpGrp->GetN(), size);
                         auto it = ProRouting::paths[srcid][dstid].begin();
                         std::advance(it, qp->pathIndex);
                         uint32_t path = *it;
@@ -516,6 +518,7 @@ bool QbbNetDevice::IsQbb(void) const { return true; }
 
 void QbbNetDevice::NewQp(Ptr<RdmaQueuePair> qp) {
     qp->m_nextAvail = Simulator::Now();
+    qp->SamplePacket();
     DequeueAndTransmit();
 }
 void QbbNetDevice::ReassignedQp(Ptr<RdmaQueuePair> qp) { DequeueAndTransmit(); }
@@ -563,15 +566,15 @@ void QbbNetDevice::UpdateNextAvail(Time t) {
     }
 }
 
-void QbbNetDevice::calc_path(unsigned qIndex, uint32_t span) {
+void QbbNetDevice::calc_path(unsigned qIndex, uint32_t span, uint32_t size) {
     Ptr<RdmaQueuePair> qp = m_rdmaEQ->GetQp(qIndex);
     if (span % 2 == 0) {
         span += 1;
     }
     if (qp->pathIndex != 0) {  // is inited
-        qp->pathIndex = (qp->pathIndex + span) % M;
+        qp->pathIndex = (qp->pathIndex + span) % size;
     } else {  // not inited
-        qp->pathIndex = ProRouting::pro_c % M;
+        qp->pathIndex = ProRouting::pro_c % size;
     }
     ProRouting::pro_c = qp->pathIndex + 1;
 }

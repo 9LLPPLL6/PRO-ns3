@@ -20,6 +20,7 @@
 #include "ns3/uinteger.h"
 #include "ppp-header.h"
 #include "qbb-header.h"
+#include "pro-routing.h"
 
 namespace ns3 {
 
@@ -345,6 +346,21 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
             }
         }
 
+        if(Settings::lb_mode == 12 && m_irn) {
+            std::cerr << "ERROR: IRN and LB cannot be used together." << std::endl;
+            exit(1);
+        }
+
+        if(Settings::lb_mode == 12) {
+            if(x == 2) {
+                seqh.SetIrnNack(ch.udp.seq);
+                seqh.SetIrnNackSize(payload_size);
+            } else {
+                seqh.SetIrnNack(0);
+                seqh.SetIrnNackSize(0);
+            }
+        }
+
         if (ecnbits || cnp_check) {  // NACK accompanies with CNP packet
             // XXX monitor CNP generation at sender
             cnp_total++;
@@ -501,6 +517,28 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
             if (qp->irn.m_recovery && qp->snd_una >= qp->irn.m_recovery_seq) {
                 qp->irn.m_recovery = false;
             }
+        } else if(Settings::lb_mode == 12) {
+            if(ch.ack.irnNackSize != 0) {
+                qp->proflr.m_sack.sack(ch.ack.irnNack, ch.ack.irnNackSize);
+            }
+
+            uint32_t sack_seq, sack_len;
+            if(qp->proflr.m_sack.peekFrontBlock(&sack_seq, &sack_len)) {
+                if(qp->snd_una >= sack_seq && qp->snd_una < sack_seq + sack_len) {
+                    qp->snd_una = sack_len + sack_seq;
+                }
+            }
+
+            qp->proflr.m_sack.discardUpTo(qp->snd_una);
+
+            if (qp->snd_nxt < qp->snd_una) {
+                qp->snd_nxt = qp->snd_una;
+            }
+
+            if(qp->proflr.is_recovery && qp->snd_nxt >= qp->proflr.curb) {
+                qp->snd_nxt = qp->proflr.last_snd_nxt;
+                qp->proflr.is_recovery = false;
+            }
         } else {
             if (qp->snd_nxt < qp->snd_una) {
                 qp->snd_nxt = qp->snd_una;
@@ -539,7 +577,34 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
                 qp->irn.m_recovery = false;
             }
         }
-
+    } else if(Settings::lb_mode == 12) {
+        if (ch.ack.irnNackSize != 0) {
+            if(!qp->proflr.is_recovery) {
+                printf("Pro fast loss retranmission\n");
+                qp->proflr.is_recovery = true;
+                uint32_t psn = ch.ack.irnNack;
+                uint32_t i = qp->SearchLastI(psn);
+                double tPreI = (i - 1) * ProRouting::sample_t;
+                double tpsn = tPreI + ProRouting::sample_t * qp->TimeRatio(psn, i - 1);
+                double tcur = tpsn - ProRouting::maxdelay;
+                qp->proflr.curb = qp->TimeToPsn(tcur);
+                if (qp->snd_una > qp->proflr.lastb) {
+                    qp->proflr.lastb = qp->snd_una;
+                }
+                qp->InsertProRet(qp->proflr.lastb, qp->proflr.curb);
+                qp->proflr.last_snd_nxt = qp->snd_nxt;
+                qp->snd_nxt = qp->proflr.lastb;
+            } //else {
+            //     if(qp->snd_nxt > qp->proflr.curb) {
+            //         qp->snd_nxt = qp->proflr.last_snd_nxt;
+            //     }
+            //     qp->proflr.is_recovery = false;
+            // }
+        } else {
+            if(qp->proflr.is_recovery) {
+                qp->proflr.is_recovery = false;
+            }
+        }
     } else if (ch.l3Prot == 0xFD)  // NACK
         RecoverQueue(qp);
 
@@ -593,7 +658,7 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch) {
  * @return int
  * 0: should not reach here
  * 1: generate ACK
- * 2: still in loss recovery of IRN
+ * 2: still in loss recovery of IRN / PRO
  * 4: OoO, but skip to send NACK as it is already NACKed.
  * 6: NACK but functionality is ACK (indicating all packets are received)
  */
@@ -622,6 +687,27 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             return 0;  // should not reach here
         }
 
+        if(Settings::lb_mode == 12) {
+            q->ReceiverNextExpectedSeq += size - (expected - seq);
+            uint32_t sack_seq, sack_len;
+            if(q->m_pro_sack_.peekFrontBlock(&sack_seq, &sack_len)) {
+                if(sack_seq <= q->ReceiverNextExpectedSeq) {
+                    q->ReceiverNextExpectedSeq += (sack_len - (q->ReceiverNextExpectedSeq - sack_seq));
+                }
+            }
+            q->m_pro_sack_.discardUpTo(q->ReceiverNextExpectedSeq);
+
+            if(q->ReceiverNextExpectedSeq >= q->m_milestone_rx) {
+                q->m_milestone_rx += m_ack_interval;
+            }
+
+            if(q->m_pro_sack_.IsEmpty()) {
+                return 6;
+            } else {
+                return 2;
+            }
+        }
+
         q->ReceiverNextExpectedSeq += size - (expected - seq);
         if (q->ReceiverNextExpectedSeq >= q->m_milestone_rx) {
             q->m_milestone_rx +=
@@ -648,6 +734,16 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             cnp = true;    // XXX: out-of-order should accompany with CNP (?) TODO: Check on CX6
             return 2;      // generate SACK
         }
+        if(Settings::lb_mode == 12) {
+            if(q->m_pro_sack_.blockExists(seq, size) && Simulator::Now() < q->m_nackTimer) {
+                return 4;
+            }
+            q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
+            q->m_pro_sack_.sack(seq, size);
+            NS_ASSERT(q->m_pro_sack_.discardUpTo(expected) == 0);
+            cnp = true;
+            return 2;
+        }
         if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected) {  // new NACK
             q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
             q->m_lastNACK = expected;
@@ -673,6 +769,14 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             } else {
                 // should we put nack timer here
                 return 2;  // Still in loss recovery mode of IRN
+            }
+        }
+
+        if(Settings::lb_mode == 12) {
+            if(q->m_pro_sack_.IsEmpty()) {
+                return 6;
+            } else {
+                return 2;
             }
         }
         // Duplicate.
@@ -1354,4 +1458,12 @@ void RdmaHw::HandleAckDctcp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &
         qp->m_rate = std::min(qp->m_max_rate, qp->m_rate + m_dctcp_rai);
 }
 
+/*******************
+ * PRO
+ ******************/
+// void RdmaHw::SamplePacket(Ptr<RdmaQueuePair> qp) {
+//     qp->proflr.psnlist.push_back(qp->snd_nxt);
+
+//     Simulator::Schedule(Seconds(ProRouting::sample_t), &RdmaHw::SamplePacket, this, qp);
+// }
 }  // namespace ns3

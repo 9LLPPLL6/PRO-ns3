@@ -158,7 +158,7 @@ public:
    virtual void Resume(unsigned qIndex);
 
    ///  calculate the path for the pro load balance
-   void calc_path(unsigned qIndex, uint32_t span);
+   void calc_path(unsigned qIndex, uint32_t span, uint32_t size);
 
    /**
     * The queues for each priority class.

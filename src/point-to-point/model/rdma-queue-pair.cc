@@ -11,6 +11,7 @@
 #include "ns3/ppp-header.h"
 #include "ns3/settings.h"
 #include "rdma-hw.h"
+#include "pro-routing.h"
 
 namespace ns3 {
 
@@ -74,6 +75,17 @@ RdmaQueuePair::RdmaQueuePair(uint16_t pg, Ipv4Address _sip, Ipv4Address _dip, ui
     irn.m_recovery = false;
 
     m_timeout = MilliSeconds(4);
+
+    proflr.is_recovery = false;
+    proflr.maxack = 0;
+    proflr.lastb = 0;
+    proflr.curb = 0;
+    proflr.last_snd_nxt = 0;
+
+    /***
+     * TODO
+     */
+    // proflr.maxdelay =
 }
 
 void RdmaQueuePair::SetSize(uint64_t size) { m_size = size; }
@@ -87,6 +99,7 @@ void RdmaQueuePair::SetVarWin(bool v) { m_var_win = v; }
 void RdmaQueuePair::SetFlowId(int32_t v) {
     m_flow_id = v;
     irn.m_sack.socketId = v;
+    proflr.m_sack.socketId = v;
 }
 
 void RdmaQueuePair::SetTimeout(Time v) { m_timeout = v; }
@@ -174,6 +187,68 @@ bool RdmaQueuePair::IsFinished() {
     return snd_una >= m_size;
 }
 
+// PRO
+void RdmaQueuePair::SamplePacket() {
+    proflr.psnlist.push_back(snd_nxt);
+
+    Simulator::Schedule(Seconds(ProRouting::sample_t), &RdmaQueuePair::SamplePacket, this);
+}
+
+uint32_t RdmaQueuePair::TimeRatio(uint32_t psn, uint32_t i) {
+    uint32_t l_psn = proflr.psnlist[i];
+    uint32_t r_psn = proflr.psnlist[i + 1];
+
+    uint32_t r1 = GetRePkt(l_psn, r_psn);
+    uint32_t r2 = GetRePkt(psn, r_psn);
+
+    return (psn - l_psn + r2) / (r_psn - l_psn + r1);
+}
+
+uint32_t RdmaQueuePair::GetRePkt(uint32_t lrange, uint32_t rrange) {
+    uint32_t result = 0;
+    for (auto a : proflr.proretlist) {
+        if(a.endrt < lrange || a.startrt > rrange) continue;
+
+        if(a.endrt <= rrange && a.startrt >= lrange) {
+            result += a.endrt - a.startrt;
+        } else if(a.endrt <= rrange) {
+            result += a.endrt - lrange;
+        } else if(a.startrt >= lrange) {
+            result += rrange - a.startrt;
+        } else {
+            result += rrange - lrange;
+        }
+    }
+}
+
+//return 0 if not found
+uint32_t RdmaQueuePair::SearchLastI(uint32_t psn) {
+    int i = proflr.psnlist.size() - 1;
+    for (; i > 0; i--) {
+        if(proflr.psnlist[i] >= psn && proflr.psnlist[i-1] < psn) 
+            return i;
+    }
+}
+
+//return 0 if not found
+uint32_t RdmaQueuePair::TimeToPsn(double time) {
+    int i = proflr.psnlist.size() - 2;
+    for (; i >= 0; i--) {
+        double lt = ProRouting::sample_t * i;
+        double rt = ProRouting::sample_t * (i + 1);
+        if (lt < time && time <= rt) {
+            uint32_t p = proflr.psnlist[i];
+            uint64_t byteRate = m_rate.GetBitRate() / 8;
+            return p + (uint32_t)((time - lt) / ProRouting::sample_t * byteRate);
+        }
+    }
+    return 0;
+}
+
+void RdmaQueuePair::InsertProRet(uint32_t startrt, uint32_t endrt) {
+    proret pr = {startrt, endrt};
+    proflr.proretlist.push_back(pr);
+}
 /*********************
  * RdmaRxQueuePair
  ********************/
@@ -386,4 +461,149 @@ size_t IrnSackManager::getSackBufferOverhead() {
     return overhead;
 }
 
+ProSackManager::ProSackManager() {}
+
+ProSackManager::ProSackManager(int flow_id) { socketId = flow_id; }
+
+// put blocks
+void ProSackManager::sack(uint32_t seq, uint32_t sz) {
+    if (!sz) return;
+    NS_LOG_LOGIC("Flow " << socketId << " : Inserting Block " << seq << "-" << (seq + sz));
+    uint32_t seqEnd = seq + sz;  // exclusive
+
+    auto it = m_data.begin();
+    for (; it != m_data.end(); ++it) {
+        uint32_t blockBegin = it->first;             // inclusive
+        uint32_t blockEnd = it->first + it->second;  // exclusive
+
+        if (blockBegin <= seq && seqEnd <= blockEnd) {
+            // seq-seqEnd is included inside block-blockEnd
+            return;
+        } else if (seq < blockBegin && blockEnd < seqEnd) {
+            // block-blockEnd is included inside Endseq-seqEnd
+            // first segment : seq - blockBegin
+            // second segment : blockEnd - seqEnd
+            m_data.insert(it, std::pair<uint32_t, uint32_t>(seq, blockBegin - seq));
+            NS_LOG_LOGIC("Flow " << socketId << " : Inserting Seg " << seq << "-" << blockBegin);
+            seq = blockEnd;
+            sz = seqEnd - blockEnd;
+            seqEnd = seq + sz;
+        } else if (seq < blockBegin && seqEnd <= blockBegin) {
+            // seq-seqEnd is mutually exclusive to block-blockEnd, and smaller than block-blockEnd
+            m_data.insert(it, std::pair<uint32_t, uint32_t>(seq, sz));
+            NS_LOG_LOGIC("Flow " << socketId << " : Inserting Seg (Mutex)" << seq << "-"
+                                 << (seq + sz));
+            sz = 0;
+            break;
+        } else if (blockBegin <= seq && seq <= blockEnd && blockEnd < seqEnd) {
+            // front part of seq-seqEnd is overlapped
+            // new segment : blockEnd - seqEnd
+            seq = blockEnd;
+            sz = seqEnd - blockEnd;
+        } else if (seq < blockBegin && blockBegin <= seqEnd && seqEnd <= blockEnd) {
+            // rear part of seq-seqEnd is overlapped
+            // new segment : seq - blockBegin
+            m_data.insert(it, std::pair<uint32_t, uint32_t>(seq, blockBegin - seq));
+            sz = 0;
+            break;
+        } else {
+            NS_ASSERT(blockEnd <= seq);
+        }
+    }
+    if (sz) {
+        NS_LOG_LOGIC("Flow " << socketId << " : Inserting Seg (rem) " << seq << "-" << (seq + sz));
+        m_data.insert(it, std::pair<uint32_t, uint32_t>(seq, sz));
+    }
+    NS_ASSERT(m_data.size() > 0);
+
+    // Sanity check : check duplicate, empty blocks
+    // merge neighboring blocks
+    auto it_prev = m_data.begin();
+    for (it = m_data.begin(); it != m_data.end();) {
+        if (it == it_prev) {
+            ++it;
+            continue;
+        }
+        NS_ASSERT(it_prev->first + it_prev->second <= it->first);
+        NS_ASSERT(it->second > 0);
+        if (it_prev->first + it_prev->second == it->first) {
+            // merge neighboring block
+            NS_LOG_LOGIC("Flow " << socketId << " : Merging Block " << it_prev->first << "-"
+                                 << (it_prev->first + it_prev->second) << " and " << it->first
+                                 << "-" << (it->first + it->second));
+            it_prev->second += it->second;
+            it = m_data.erase(it);
+        } else {
+            it_prev = it;
+            ++it;
+        }
+    }
+
+    NS_LOG_LOGIC("Flow " << socketId << " : Blocks " << *this);
+}
+
+// put into return number of blocks removed
+size_t ProSackManager::discardUpTo(uint32_t cumAck) {
+    auto it = m_data.begin();
+    size_t erase_len = 0;
+    for (; it != m_data.end();) {
+        if (it->first + it->second <= cumAck) {
+            NS_LOG_LOGIC("Flow " << socketId << " : Removing under " << cumAck
+                                 << " - Removed Whole " << it->first << "-"
+                                 << (it->first + it->second));
+            erase_len += it->second;
+            it = m_data.erase(it);
+        } else if (it->first < cumAck) {  // do we need equal here? Maybe not
+            NS_LOG_LOGIC("Flow " << socketId << " : Removing under " << cumAck
+                                 << " - Removed Part  " << it->first << "-" << (cumAck)
+                                 << " of Entire part " << it->first << "-"
+                                 << (it->first + it->second));
+            erase_len += cumAck - it->first;
+            it->second = it->first + it->second - cumAck;
+            it->first = cumAck;
+            NS_ASSERT(it->second != 0);
+            break;
+        } else {
+            break;
+        }
+    }
+    return erase_len;
+}
+
+bool ProSackManager::IsEmpty() { return !m_data.size(); }
+
+bool ProSackManager::blockExists(uint32_t seq, uint32_t size) {
+    // query if block exists inside SACK table
+    auto it = m_data.begin();
+    for (; it != m_data.end(); ++it) {
+        if (it->first <= seq && seq + size <= it->first + it->second) {
+            return true;
+        }
+    }
+    return false;
+}
+bool ProSackManager::peekFrontBlock(uint32_t* pseq, uint32_t* psize) {
+    NS_ASSERT(pseq);
+    NS_ASSERT(psize);
+
+    if (!m_data.size()) {
+        *pseq = 0;
+        *psize = 0;
+        return false;
+    }
+
+    auto it = m_data.begin();
+    *pseq = it->first;
+    *psize = it->second;
+    return true;
+}
+
+size_t ProSackManager::getSackBufferOverhead() {
+    size_t overhead = 0;
+    auto it = m_data.begin();
+    for (; it != m_data.end(); ++it) {
+        overhead += it->second;  // Bytes
+    }
+    return overhead;
+}
 }  // namespace ns3
