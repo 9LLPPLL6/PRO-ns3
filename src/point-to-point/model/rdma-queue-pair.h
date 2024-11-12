@@ -38,7 +38,7 @@ typedef struct proret{
 } proret;
 
 class ProSackManager {
-   private:
+   public:
     std::list<std::pair<uint32_t, uint32_t>> m_data;
 
    public:
@@ -199,12 +199,12 @@ class RdmaQueuePair : public Object {
 
     uint64_t HpGetCurWin();  // window size calculated from hp.m_curRate, used by HPCC
 
-    // PROS
+    // PRO
     void SamplePacket();
-    uint32_t TimeRatio(uint32_t psn, uint32_t i);
+    double TimeRatio(uint32_t psn, uint32_t i);
     uint32_t GetRePkt(uint32_t lrange, uint32_t rrange);
     uint32_t SearchLastI(uint32_t psn);
-    uint32_t TimeToPsn(double time);
+    uint32_t TimeToPsn(uint64_t time);
     void InsertProRet(uint32_t startrt, uint32_t endrt);
 
     inline uint32_t GetIrnBytesInFlight() const {

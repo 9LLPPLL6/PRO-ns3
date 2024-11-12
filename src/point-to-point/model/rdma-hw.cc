@@ -325,6 +325,9 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
         }
     }
 
+    /**
+     * TODO:ooo should not set cnp_check to true
+     */
     bool cnp_check = false;
     int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size, cnp_check);
 
@@ -347,7 +350,7 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
         }
 
         if(Settings::lb_mode == 12 && m_irn) {
-            std::cerr << "ERROR: IRN and LB cannot be used together." << std::endl;
+            std::cerr << "ERROR: IRN and PROLB cannot be used together." << std::endl;
             exit(1);
         }
 
@@ -463,6 +466,8 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
     uint8_t cnp = (ch.ack.flags >> qbbHeader::FLAG_CNP) & 1;
     int i;
     uint64_t key = GetQpKey(ch.sip, port, sport, qIndex);
+    printf("--------receiveAck-----------\n");
+    printf("key: %lu\n", key);
     Ptr<RdmaQueuePair> qp = GetQp(key);
     if (qp == NULL) {
         // lookup akashic memory
@@ -518,6 +523,8 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
                 qp->irn.m_recovery = false;
             }
         } else if(Settings::lb_mode == 12) {
+            printf("is_recery: %d\n", qp->proflr.is_recovery);
+            printf("seq: %d una:%d next:%d nack:%d nacksize:%d\n", seq, qp->snd_una, qp->snd_nxt,ch.ack.irnNack, ch.ack.irnNackSize);
             if(ch.ack.irnNackSize != 0) {
                 qp->proflr.m_sack.sack(ch.ack.irnNack, ch.ack.irnNackSize);
             }
@@ -525,20 +532,21 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
             uint32_t sack_seq, sack_len;
             if(qp->proflr.m_sack.peekFrontBlock(&sack_seq, &sack_len)) {
                 if(qp->snd_una >= sack_seq && qp->snd_una < sack_seq + sack_len) {
-                    qp->snd_una = sack_len + sack_seq;
+                    qp->snd_una =  sack_seq + sack_len;
                 }
             }
+            printf("sack_seq: %d sack_len: %d\n", sack_seq, sack_len);
 
             qp->proflr.m_sack.discardUpTo(qp->snd_una);
 
             if (qp->snd_nxt < qp->snd_una) {
                 qp->snd_nxt = qp->snd_una;
             }
-
-            if(qp->proflr.is_recovery && qp->snd_nxt >= qp->proflr.curb) {
-                qp->snd_nxt = qp->proflr.last_snd_nxt;
-                qp->proflr.is_recovery = false;
-            }
+            printf("next snd_nxt: %d\n", qp->snd_nxt);
+            // if(qp->proflr.is_recovery && qp->snd_nxt >= qp->proflr.curb) {
+            //     qp->snd_nxt = qp->proflr.last_snd_nxt;
+            //     qp->proflr.is_recovery = false;
+            // }
         } else {
             if (qp->snd_nxt < qp->snd_una) {
                 qp->snd_nxt = qp->snd_una;
@@ -578,30 +586,51 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
             }
         }
     } else if(Settings::lb_mode == 12) {
+        printf("set is_rece\n");
         if (ch.ack.irnNackSize != 0) {
             if(!qp->proflr.is_recovery) {
                 printf("Pro fast loss retranmission\n");
-                qp->proflr.is_recovery = true;
+                // printf("key: %lu\n", key);
+                // printf("psnlistsize:%d\n", qp->proflr.psnlist.size());
                 uint32_t psn = ch.ack.irnNack;
                 uint32_t i = qp->SearchLastI(psn);
-                double tPreI = (i - 1) * ProRouting::sample_t;
-                double tpsn = tPreI + ProRouting::sample_t * qp->TimeRatio(psn, i - 1);
-                double tcur = tpsn - ProRouting::maxdelay;
-                qp->proflr.curb = qp->TimeToPsn(tcur);
-                if (qp->snd_una > qp->proflr.lastb) {
-                    qp->proflr.lastb = qp->snd_una;
+                if(ch.ack.irnNack == 0 && ch.ack.irnNackSize != 0)
+                    printf("size: %d nack:%d\n", ch.ack.irnNackSize,ch.ack.irnNack);   
+                uint64_t tPreI = (i - 1) * ProRouting::sample_t;
+                // printf("%f\n",qp->TimeRatio(psn, i - 1));
+                uint64_t tem = static_cast<uint64_t>(std::round(ProRouting::sample_t * qp->TimeRatio(psn, i - 1)));
+                uint64_t tpsn = tPreI + tem;
+                uint64_t tcur = tpsn - (ProRouting::maxdelay * 1000);
+                if(tcur > 0) {
+                    if (qp->snd_una > qp->proflr.curb) {
+                        qp->proflr.lastb = qp->snd_una;
+                    }else {
+                        qp->proflr.lastb = qp->proflr.curb;
+                    }
+                    qp->proflr.curb = qp->TimeToPsn(tcur);
+                    if(qp->proflr.lastb < qp->proflr.curb) {
+                        // std::cerr << "lastb: " << qp->proflr.lastb << " curb: " << qp->proflr.curb << std::endl;
+                        // std::cerr << "nack: " << ch.ack.irnNack << " nacksize" << ch.ack.irnNackSize << std::endl;
+                        // std::cerr << "snd_next" << qp->snd_nxt << std::endl;
+                        qp->InsertProRet(qp->proflr.lastb, qp->proflr.curb);
+                        qp->proflr.last_snd_nxt = qp->snd_nxt;
+                        qp->snd_nxt = qp->proflr.lastb;
+                        qp->proflr.is_recovery = true;
+                        printf("lastb: %d curb: %d\n", qp->proflr.lastb, qp->proflr.curb);
+                        printf("last_snd_nxt: %d snd_nxt: %d\n", qp->proflr.last_snd_nxt, qp->snd_nxt);
+                    }
                 }
-                qp->InsertProRet(qp->proflr.lastb, qp->proflr.curb);
-                qp->proflr.last_snd_nxt = qp->snd_nxt;
-                qp->snd_nxt = qp->proflr.lastb;
-            } //else {
-            //     if(qp->snd_nxt > qp->proflr.curb) {
-            //         qp->snd_nxt = qp->proflr.last_snd_nxt;
-            //     }
-            //     qp->proflr.is_recovery = false;
-            // }
+            } else {
+                if(qp->snd_nxt > qp->proflr.curb) {
+                    printf("finsh fast loss retranmission snd_nxt:%d last_nex:%d\n", qp->snd_nxt, qp->proflr.last_snd_nxt);
+                    if(qp->snd_nxt < qp->proflr.last_snd_nxt)
+                        qp->snd_nxt = qp->proflr.last_snd_nxt;
+                    qp->proflr.is_recovery = false;
+                }
+            }
         } else {
             if(qp->proflr.is_recovery) {
+                printf("#\n");
                 qp->proflr.is_recovery = false;
             }
         }
@@ -704,6 +733,12 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             if(q->m_pro_sack_.IsEmpty()) {
                 return 6;
             } else {
+                // if(seq == 0)
+                //     printf(
+                //         "seq: %u, size:%d ReceiverNextExpectedSeq:%d expected: %u, SACKsize: %u "
+                //         "sack_seq:%d  size:%d\n",
+                //         seq, size, q->ReceiverNextExpectedSeq,expected, q->m_pro_sack_.m_data.size(), sack_seq,sack_len);
+
                 return 2;
             }
         }
@@ -741,7 +776,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
             q->m_pro_sack_.sack(seq, size);
             NS_ASSERT(q->m_pro_sack_.discardUpTo(expected) == 0);
-            cnp = true;
+            // cnp = true;    //out-of-order should not accompany with CNP
             return 2;
         }
         if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected) {  // new NACK
@@ -750,7 +785,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             if (m_backto0) {
                 q->ReceiverNextExpectedSeq = q->ReceiverNextExpectedSeq / m_chunk * m_chunk;
             }
-            cnp = true;  // XXX: out-of-order should accompany with CNP (?) TODO: Check on CX6
+            cnp = true;  //  out-of-order should accompany with CNP (?) TODO: Check on CX6
             return 2;
         } else {
             // skip to send NACK

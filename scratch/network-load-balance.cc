@@ -1467,7 +1467,10 @@ int main(int argc, char *argv[]) {
     assert(maxBdp == irn_bdp_lookup);
 
     // setup the sampling interval of sending packets for pro (s)
-    ProRouting::sample_t = rtt_sum / count / 1000000000;
+    ProRouting::sample_t = rtt_sum / count;
+    //debug
+    printf("count:%d rtt_sum: %d sample_t: %d rtt_sum/count:%d\n", count, rtt_sum,
+           ProRouting::sample_t,rtt_sum/count);
 
     std::cout << "Configuring switches" << std::endl;
     /* config ToR Switch */

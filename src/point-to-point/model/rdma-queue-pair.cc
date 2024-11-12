@@ -8,6 +8,7 @@
 #include <ns3/udp-header.h>
 #include <ns3/uinteger.h>
 
+#include <cmath>
 #include "ns3/ppp-header.h"
 #include "ns3/settings.h"
 #include "rdma-hw.h"
@@ -173,6 +174,9 @@ uint64_t RdmaQueuePair::HpGetCurWin() {
     return w;
 }
 
+/**
+ * TODO: add lb_mode == 12
+ */
 bool RdmaQueuePair::IsFinished() {
     if (irn.m_enabled) {
         uint32_t sack_seq, sack_sz;
@@ -184,6 +188,15 @@ bool RdmaQueuePair::IsFinished() {
         }
     }
 
+    if(Settings::lb_mode == 12) {
+        uint32_t sack_seq, sack_sz;
+        if(proflr.m_sack.peekFrontBlock(&sack_seq, &sack_sz)) {
+            if(snd_nxt == sack_seq) {
+                snd_nxt += sack_sz;
+                proflr.m_sack.discardUpTo(snd_nxt);
+            }
+        }
+    }
     return snd_una >= m_size;
 }
 
@@ -191,17 +204,17 @@ bool RdmaQueuePair::IsFinished() {
 void RdmaQueuePair::SamplePacket() {
     proflr.psnlist.push_back(snd_nxt);
 
-    Simulator::Schedule(Seconds(ProRouting::sample_t), &RdmaQueuePair::SamplePacket, this);
+    Simulator::Schedule(NanoSeconds(ProRouting::sample_t), &RdmaQueuePair::SamplePacket, this);
 }
 
-uint32_t RdmaQueuePair::TimeRatio(uint32_t psn, uint32_t i) {
+double RdmaQueuePair::TimeRatio(uint32_t psn, uint32_t i) {
     uint32_t l_psn = proflr.psnlist[i];
     uint32_t r_psn = proflr.psnlist[i + 1];
 
     uint32_t r1 = GetRePkt(l_psn, r_psn);
     uint32_t r2 = GetRePkt(psn, r_psn);
 
-    return (psn - l_psn + r2) / (r_psn - l_psn + r1);
+    return (psn - l_psn + r2 + 0.0) / (r_psn - l_psn + r1 + 0.0);
 }
 
 uint32_t RdmaQueuePair::GetRePkt(uint32_t lrange, uint32_t rrange) {
@@ -219,27 +232,37 @@ uint32_t RdmaQueuePair::GetRePkt(uint32_t lrange, uint32_t rrange) {
             result += rrange - lrange;
         }
     }
+    return result;
 }
 
 //return 0 if not found
 uint32_t RdmaQueuePair::SearchLastI(uint32_t psn) {
     int i = proflr.psnlist.size() - 1;
     for (; i > 0; i--) {
-        if(proflr.psnlist[i] >= psn && proflr.psnlist[i-1] < psn) 
+        //printf("psnlist[%d]: %d\n", i-1, proflr.psnlist[i-1]);
+        if (proflr.psnlist[i - 1] < psn && proflr.psnlist[i] >= psn) 
             return i;
     }
+    printf("psn[0]:%d psn[1]:%d  psn: %d\n",proflr.psnlist[0],proflr.psnlist[1], psn);
+    return 0;
 }
 
 //return 0 if not found
-uint32_t RdmaQueuePair::TimeToPsn(double time) {
+uint32_t RdmaQueuePair::TimeToPsn(uint64_t time) {
+    //printf("time: %ld\n", time);
     int i = proflr.psnlist.size() - 2;
     for (; i >= 0; i--) {
-        double lt = ProRouting::sample_t * i;
-        double rt = ProRouting::sample_t * (i + 1);
+        uint64_t lt = ProRouting::sample_t * i;
+        uint64_t rt = ProRouting::sample_t * (i + 1);
         if (lt < time && time <= rt) {
             uint32_t p = proflr.psnlist[i];
-            uint64_t byteRate = m_rate.GetBitRate() / 8;
-            return p + (uint32_t)((time - lt) / ProRouting::sample_t * byteRate);
+            //uint64_t byteRate = m_rate.GetBitRate() / 8 / 1000000000;  // byte/ns
+            uint64_t byteRate = proflr.psnlist[i + 1] - proflr.psnlist[i];
+            //printf("byteRate: %d\n", byteRate);
+            double ratio = (time - lt + 0.0) / ProRouting::sample_t;
+            // printf("p:%d ratio: %f result:%d\n", p, ratio,
+                //    p + static_cast<uint32_t>(std::round(ratio * byteRate)));
+            return p + static_cast<uint32_t>(std::round(ratio * byteRate));
         }
     }
     return 0;

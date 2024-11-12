@@ -36,6 +36,6 @@ class ProRouting : public Object {
     static uint32_t path_num;
     static uint32_t pro_c;  // to Inter-QP round robin
     static std::map<uint64_t, uint32_t> packet2path;  // packet -> path
-    static double sample_t;                         // The sampling interval of sending packets (s)
-    static uint32_t maxdelay;
+    static uint64_t sample_t;                         // The sampling interval of sending packets (ns)
+    static uint64_t maxdelay;
 };
