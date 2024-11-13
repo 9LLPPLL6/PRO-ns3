@@ -83,6 +83,10 @@ RdmaQueuePair::RdmaQueuePair(uint16_t pg, Ipv4Address _sip, Ipv4Address _dip, ui
     proflr.curb = 0;
     proflr.last_snd_nxt = 0;
 
+    uint32_t srcid = Settings::hostIp2IdMap[sip.Get()];
+    uint32_t dstid = Settings::hostIp2IdMap[dip.Get()];
+    proflr.samplet = ProRouting::path2rtt[srcid][dstid];
+
     /***
      * TODO
      */
@@ -204,7 +208,7 @@ bool RdmaQueuePair::IsFinished() {
 void RdmaQueuePair::SamplePacket() {
     proflr.psnlist.push_back(snd_nxt);
 
-    Simulator::Schedule(NanoSeconds(ProRouting::sample_t), &RdmaQueuePair::SamplePacket, this);
+    Simulator::Schedule(NanoSeconds(proflr.samplet), &RdmaQueuePair::SamplePacket, this);
 }
 
 double RdmaQueuePair::TimeRatio(uint32_t psn, uint32_t i) {
@@ -237,6 +241,8 @@ uint32_t RdmaQueuePair::GetRePkt(uint32_t lrange, uint32_t rrange) {
 
 //return 0 if not found
 uint32_t RdmaQueuePair::SearchLastI(uint32_t psn) {
+    printf("searchi psn:%d max:%d \n",psn, proflr.psnlist[proflr.psnlist.size()-1]);
+    printf("time:%ld\n", Simulator::Now().GetNanoSeconds());
     int i = proflr.psnlist.size() - 1;
     for (; i > 0; i--) {
         //printf("psnlist[%d]: %d\n", i-1, proflr.psnlist[i-1]);
@@ -252,14 +258,14 @@ uint32_t RdmaQueuePair::TimeToPsn(uint64_t time) {
     //printf("time: %ld\n", time);
     int i = proflr.psnlist.size() - 2;
     for (; i >= 0; i--) {
-        uint64_t lt = ProRouting::sample_t * i;
-        uint64_t rt = ProRouting::sample_t * (i + 1);
+        uint64_t lt = proflr.samplet * i;
+        uint64_t rt = proflr.samplet * (i + 1);
         if (lt < time && time <= rt) {
             uint32_t p = proflr.psnlist[i];
             //uint64_t byteRate = m_rate.GetBitRate() / 8 / 1000000000;  // byte/ns
             uint64_t byteRate = proflr.psnlist[i + 1] - proflr.psnlist[i];
             //printf("byteRate: %d\n", byteRate);
-            double ratio = (time - lt + 0.0) / ProRouting::sample_t;
+            double ratio = (time - lt + 0.0) / proflr.samplet;
             // printf("p:%d ratio: %f result:%d\n", p, ratio,
                 //    p + static_cast<uint32_t>(std::round(ratio * byteRate)));
             return p + static_cast<uint32_t>(std::round(ratio * byteRate));

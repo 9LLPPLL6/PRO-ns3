@@ -1455,7 +1455,9 @@ int main(int argc, char *argv[]) {
             pairBdp[n.Get(j)][n.Get(i)] = bdp;
             pairRtt[n.Get(i)][n.Get(j)] = rtt;
             pairRtt[n.Get(j)][n.Get(i)] = rtt;
-
+            ProRouting::path2rtt[n.Get(i)->GetId()][n.Get(j)->GetId()] = rtt;
+            ProRouting::path2rtt[n.Get(j)->GetId()][n.Get(i)->GetId()] = rtt;
+            
             if (bdp > maxBdp) maxBdp = bdp;
             if (rtt > maxRtt) maxRtt = rtt;
 
@@ -1466,11 +1468,12 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "maxRtt: %lu, maxBdp: %lu\n", maxRtt, maxBdp);
     assert(maxBdp == irn_bdp_lookup);
 
-    // setup the sampling interval of sending packets for pro (s)
-    ProRouting::sample_t = rtt_sum / count;
+    // exit(0);
+    // setup the sampling interval of sending packets for pro 
+    // ProRouting::sample_t = rtt_sum / count;
     //debug
-    printf("count:%d rtt_sum: %d sample_t: %d rtt_sum/count:%d\n", count, rtt_sum,
-           ProRouting::sample_t,rtt_sum/count);
+    // printf("count:%d rtt_sum: %d sample_t: %d rtt_sum/count:%d\n", count, rtt_sum,
+        //    ProRouting::sample_t,rtt_sum/count);
 
     std::cout << "Configuring switches" << std::endl;
     /* config ToR Switch */

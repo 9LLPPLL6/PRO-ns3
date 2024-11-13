@@ -158,7 +158,7 @@ class RdmaQueuePair : public Object {
     } stat;
 
     struct {
-        //uint64_t samplet;
+        uint64_t samplet;  //ns
         std::vector<uint32_t> psnlist;
         std::vector<proret> proretlist;
         uint32_t maxack;
