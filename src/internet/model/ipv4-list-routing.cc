@@ -24,6 +24,12 @@
 #include "ns3/ipv4-static-routing.h"
 #include "ipv4-list-routing.h"
 
+#include "ns3/conf-loader.h"
+#include "ns3/ipv4-ospf-routing.h"
+#include "ns3/ospf-tag.h"
+
+#include <iostream>
+
 NS_LOG_COMPONENT_DEFINE ("Ipv4ListRouting");
 
 namespace ns3 {
@@ -149,7 +155,26 @@ Ipv4ListRouting::RouteInput (Ptr<const Packet> p, const Ipv4Header &header, Ptr<
         }
       else
         {
-          lcb (p, header, iif);
+          Ptr<Node> node = m_ipv4->GetObject<Node>();
+          cout << Simulator::Now() << " " << node->GetId ()<<" Packet received!" << endl;
+          node->GetObject<Ipv4OSPFRouting>()->handleMessage(p);
+
+              OSPFTag tag;
+              bool found = p->PeekPacketTag(tag);
+              if (found){
+              }else{
+
+                int index = 0;
+                for(int i=ConfLoader::Instance()->getTotalNum(); i< ConfLoader::Instance()->getTotalNum()+ConfLoader::Instance()->getToRNum(); i++){
+                    if(ConfLoader::Instance()->getSubnetByNode(i).contains(header.GetSource())){
+                       index = i;
+                       break;
+                    }
+                }
+
+                  ConfLoader::Instance()->incrementSuccessPacket(index);
+              }
+          //lcb (p, header, iif);
           return true;
         }
     }
