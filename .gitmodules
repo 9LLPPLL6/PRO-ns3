@@ -1,0 +1,3 @@
+[submodule "src/ospf"]
+	path = src/ospf
+	url = git@github.com:9LLPPLL6/ospf.git
