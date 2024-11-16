@@ -230,6 +230,7 @@ int main (int argc, char *argv[])
 
   list<NodeContainer> nodeContainers;
 
+  // core--tor
   for(int i=0; i<CORE_NUM; i++){
       for(int j=CORE_NUM; j<CORE_NUM+TOR_NUM; j++){
           NodeContainer ninj = NodeContainer (c.Get(i), c.Get(j));
@@ -237,6 +238,7 @@ int main (int argc, char *argv[])
       }
   }
 
+  //core--border
   for(int i=0; i<CORE_NUM; i++){
       for(int j=CORE_NUM+TOR_NUM; j< nNodes; j++){
           NodeContainer ninj = NodeContainer (c.Get(i), c.Get(j));
@@ -244,6 +246,7 @@ int main (int argc, char *argv[])
       }
   }
 
+  //tor--host?
   list<NodeContainer> nodeContainers_2;
   for(int i=CORE_NUM; i<CORE_NUM+TOR_NUM; i++){
       NodeContainer ninj = NodeContainer (c.Get(i), c.Get(i+TOR_NUM+BORDER_NUM));
