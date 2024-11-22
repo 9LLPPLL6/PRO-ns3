@@ -55,6 +55,8 @@
 #include "ns3/simulator.h"
 #include "ns3/udp-header.h"
 #include "ns3/uinteger.h"
+#include "ns3/ospf-tag.h"
+#include "ns3/conf-loader.h"
 
 #define MAP_KEY_EXISTS(map, key) (((map).find(key) != (map).end()))
 
@@ -433,6 +435,45 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
             Simulator::Cancel(m_resumeEvt[qIndex]);
             Resume(qIndex);
         }
+    } else if(ch.l3Prot == 0xFA) {  // OSPF
+        OSPFTag ospfTag;
+        bool found = packet->PeekPacketTag(ospfTag);
+        if(found) {
+            uint8_t type = ospfTag.getType();
+            uint16_t from = ospfTag.getNode();
+            if(type == 1) { // hello
+                m_node->m_ospf->addToNeighbors(from, Simulator::Now().GetSeconds());
+            } else if (type == 2) {  // LSA
+                uint16_t lsa_node = ospfTag.getLSANode();
+                if((uint32_t)lsa_node != m_node->GetId()) {
+                    uint32_t index = ospfTag.getLSAIndex();
+                    vector<uint16_t> lsa = ConfLoader::Instance()->getLSA(index);
+                    const map<uint32_t, vector<uint32_t>>& m_LSAs = m_node->m_ospf.GetLSAs();
+                    if(m_LSAs.find((int)lsa_node) == m_LSAs.end()) {
+                        m_node->m_ospf.AddToLSA(lsa_node, lsa);
+                        m_node->sendLSAToNei(index);
+                        return;
+                    } else {
+                        vector<uint16_t> my = m_LSAs[(int)lsa_node];
+                        for (auto it = my.begin(); it != my.end(); ++it) {
+                            if(find(lsa.begin(),lsa.end(),*it) == lsa.end()) {
+                                m_node->m_ospf.AddToLSA(lsa_node, lsa);
+                                m_node->sendLSAToNei(index);
+                                return;
+                            }
+                        }
+
+                        for(auto it = lsa.begin(); it != lsa.end(); ++it) {
+                            if(find(my.begin(),my.end(),*it) == my.end()) {
+                                m_node->m_ospf.AddToLSA(lsa_node, lsa);
+                                m_node->sendLSAToNei(index);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     } else {                              // non-PFC packets (data, ACK, NACK, CNP...)
         if (m_node->GetNodeType() > 0) {  // switch
             packet->AddPacketTag(FlowIdTag(m_ifIndex));
@@ -478,6 +519,47 @@ uint32_t QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
     p->PeekHeader(ch);
     SwitchSend(0, p, ch);
     return (type == 0 ? m_pausetime : 0);
+}
+
+void QbbNetDevice::sendHello(uint32_t ip) {
+    Ptr<Packet> p = Create<Packet>(0);
+    OSPFTag ospfTag;
+    ospfTag.setType(1); // hello
+    ospfTag.setNode(m_node->GetId());
+    p->AddPacketTag(ospfTag);
+    Ipv4Header ipv4h;
+    ipv4h.SetProtocol(0xFA);
+    ipv4h.SetSource(m_node->GetObject<Ipv4>()->GetAddress(m_ifIndex, 0).GetLocal());
+    ipv4h.SetDestination(Ipv4Address(ip));
+    ipv4h.SetPayloadSize(p->GetSize());
+    ipv4h.SetTtl(1);
+    ipv4h.SetIdentification(UniformVariable(0, 65536).GetValue());
+    p->AddHeader(ipv4h);
+    AddHeader(p, 0x800);
+    CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
+    p->PeekHeader(ch);
+    SwitchSend(0, p, ch);
+}
+
+void QbbNetDevice::sendLSAMessage(uint32_t ip, int index) {
+    Ptr<Packet> p = Create<Packet>(0);
+    OSPFTag ospfTag;
+    ospfTag.setType(2); // LSA
+    ospfTag.setNode(m_node->GetId());
+    ospfTag.setLSA(m_node->GetId(), index);
+    p->AddPacketTag(ospfTag);
+    Ipv4Header ipv4h;
+    ipv4h.SetProtocol(0xFA);
+    ipv4h.SetSource(m_node->GetObject<Ipv4>()->GetAddress(m_ifIndex, 0).GetLocal());
+    ipv4h.SetDestination(Ipv4Address(ip));
+    ipv4h.SetPayloadSize(p->GetSize());
+    ipv4h.SetTtl(1);
+    ipv4h.SetIdentification(UniformVariable(0, 65536).GetValue());
+    p->AddHeader(ipv4h);
+    AddHeader(p, 0x800);
+    CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
+    p->PeekHeader(ch);
+    SwitchSend(0, p, ch);
 }
 
 bool QbbNetDevice::Attach(Ptr<QbbChannel> ch) {

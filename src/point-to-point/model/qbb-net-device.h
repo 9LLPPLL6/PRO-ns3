@@ -135,6 +135,8 @@ public:
    bool IsQbbEnabled(void) { return m_qbbEnabled; }
 
    uint32_t SendPfc(uint32_t qIndex, uint32_t type); // type: 0 = pause, 1 = resume
+   void sendHello(uint32_t ip);
+   void sendLSAMessage(uint32_t ip, int index);
 
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceEnqueue;
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceDequeue;
@@ -215,6 +217,8 @@ public:
 	void UpdateNextAvail(Time t);
 
 	TracedCallback<Ptr<const Packet>, Ptr<RdmaQueuePair> > m_traceQpDequeue; // the trace for printing dequeue
+
+  void sendHello();
 };
 
 } // namespace ns3

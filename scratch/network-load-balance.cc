@@ -49,6 +49,11 @@
 #include "ns3/qbb-net-device.h"
 #include "ns3/rdma-hw.h"
 #include "ns3/settings.h"
+#include "ns3/ipv4-ospf-routing-helper.h"
+#include "ns3/ipv4-ospf-routing.h"
+#include "ns3/ipv4-list-routing-helper.h"
+#include "ns3/ipv4-list-routing.h"
+#include "ns3/conf-loader.h"
 
 using namespace ns3;
 using namespace std;
@@ -193,6 +198,12 @@ struct FlowInput {
 };
 FlowInput flow_input = {0};  // global variable
 uint32_t flow_num;
+
+std::vector<std::pair<uint32_t, uint32_t>> link_pairs;  // src, dst link pairs
+
+// ospf config
+double UnavailableInterval = 20.0;  // seconds
+map<uint32_t, map<uint32_t, Interface>> nbrId2if;
 
 /**
  * Read flow input from file "flowf"
@@ -668,10 +679,17 @@ void SetRoutingEntries() {
             for (int k = 0; k < (int)nexts.size(); k++) {
                 Ptr<Node> next = nexts[k];
                 uint32_t interface = nbr2if[node][next].idx;
-                if (node->GetNodeType() == 1)
+                if (node->GetNodeType() == 1) {
                     DynamicCast<SwitchNode>(node)->AddTableEntry(dstAddr, interface);
+                    if(Settings::lb_mode == 12) {
+                        node->m_ospf.AddTableEntry(dstAddr, interface);
+                    }
+                }
                 else {
                     node->GetObject<RdmaDriver>()->m_rdma->AddTableEntry(dstAddr, interface);
+                    if(Settings::lb_mode == 12) {
+                        node->m_ospf.AddTableEntry(dstAddr, interface);
+                    }
                 }
             }
         }
@@ -717,6 +735,41 @@ uint64_t get_nic_rate(NodeContainer &n) {
     }
     return avg_nic_rate / n_servers;
 }
+
+void initLSAs() {
+    std::map<uint32_t, std::vector<uint32_t>> LSAs;   // nodeid -- neighbor's id
+    for (int i = 0; i < n.GetN(); i++) {
+        Ptr<Node> node = n.Get(i);
+        uint32_t nodeid = node->GetId();
+        for(auto link: link_pairs) {
+            if(link.first == i || link.second == i) {
+                uint32_t neighbor = (link.first == i) ? link.second : link.first;
+                uint32_t neighborid = n.Get(neighbor)->GetId();
+                if(std::find(LSAs[nodeid].begin(), LSAs[nodeid].end(), neighborid) == LSAs[nodeid].end())
+                    LSAs[nodeid].push_back(neighborid);
+            }
+        }
+    }
+    for (int i = 0; i < n.GetN(); i++) {
+        n.Get(i)->m_ospf.setLSA(LSAs);
+    }
+}
+
+void sendHelloMessage(Ptr<Node> node) {
+    std::vector<NetDevice> devices = node->GetDevices();
+    std::map<Ptr<Node>, Interface> tmp = nbr2if[node];
+    for (int i = 0; i < devices.size(); i++) {
+        uint32_t dstIP;
+        for (auto it = tmp.begin(); it != tmp.end(); ++it) {
+            if(i == it->second.idx) {
+                dstIP = it->first->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal().Get();
+                devices[i]->SendHelloMessage(dstIP);
+            }
+        }
+    }
+}
+
+void checkNeighbor(Ptr<Node> node) { node->CheckNeighbors(); }
 
 /************************************************************************/
 //                                                                      //
@@ -1157,6 +1210,11 @@ int main(int argc, char *argv[]) {
     /*----------------------------------------*/
 
     InternetStackHelper internet;
+    // Ipv4ListRoutingHelper listHelper;
+    // Ipv4OSPFRoutingHelper ipv4OspfHelper;
+
+    // listHelper.Add(ipv4OspfHelper, 10);
+    // internet.SetRoutingHelper(listHelper);
     internet.Install(n);  // aggregate ipv4, ipv6, udp, tcp, etc
 
     //
@@ -1185,7 +1243,7 @@ int main(int argc, char *argv[]) {
 
     QbbHelper qbb;
     Ipv4AddressHelper ipv4;
-    std::vector<std::pair<uint32_t, uint32_t>> link_pairs;  // src, dst link pairs
+    //std::vector<std::pair<uint32_t, uint32_t>> link_pairs;  // src, dst link pairs
     for (uint32_t i = 0; i < link_num; i++) {
         uint32_t src, dst;
         std::string data_rate, link_delay;
@@ -1246,6 +1304,14 @@ int main(int argc, char *argv[]) {
                 ->GetDelay()
                 .GetTimeStep();
         nbr2if[dnode][snode].bw = DynamicCast<QbbNetDevice>(d.Get(1))->GetDataRate().GetBitRate();
+
+        nbrId2if[snode->GetId()][dnode->GetId()].up = true;
+        nbrId2if[snode->GetId()][dnode->GetId()].idx =
+            DynamicCast<QbbNetDevice>(d.Get(0))->GetIfIndex();
+
+        nbrId2if[dnode->GetId()][snode->GetId()].idx =
+            DynamicCast<QbbNetDevice>(d.Get(1))->GetIfIndex();
+        nbrId2if[dnode->GetId()][snode->GetId()].up = true;
 
         // This is just to set up the connectivity between nodes. The IP addresses are useless
         char ipstring[16];
@@ -1709,6 +1775,46 @@ int main(int argc, char *argv[]) {
         //         }
         //     }
         // }
+
+        if (Settings::lb_mode == 12) {
+            // config ospfrouting nbr2if
+            for (int i = 0; i < n.GetN(); i++) {
+                Ptr<Node> node = n.Get(i);
+                node->m_ospf.nbr2if = nbrId2if;
+                node->m_ospf.setID(i);
+                node->m_ospf.setHostId2IpMap(Settings::hostId2IpMap);
+            }
+
+            // config ospf conf-loader
+            ConfLoader::Instance()->setUnavailableInterval(UnavailableInterval);
+
+            //config settings::hostlist
+            for (int i = 0; i < n.GetN(); i++) {
+                Settings::hostList[i].id = i;
+                Settings::hostList[i].ip = n.Get(i)->GetIpv4()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
+                Settings::hostList[i].type = n.Get(i)->GetNodeType();
+            } 
+        }
+
+        // init LSA
+        if(Settings::lb_mode == 12) {
+            initLSAs();
+        }
+
+        if(Settings::lb_mode == 12) {
+            // send hello
+            for(int i = 0; i < n.GetN(); i++) {
+                Ptr<Node> node = n.Get(i);
+                Simulator::Schedule(Seconds(5), &sendHelloMessage, node);
+            }
+
+            //check neighbor
+            for(int i = 0; i < n.GetN(); i++) {
+                Ptr<Node> node = n.Get(i);
+                Simulator::Schedule(Seconds(20), &checkNeighbor, node);
+            }
+        }
+
 
         // m_outPort2BitRateMap - only for Conga
         for (auto i = nextHop.begin(); i != nextHop.end(); i++) {  // every node

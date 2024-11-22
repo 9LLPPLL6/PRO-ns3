@@ -71,6 +71,11 @@ struct Flowlet {
     uint32_t _nPackets;   // for debugging
 };
 
+struct host {
+    uint32_t id;
+    uint32_t ip;
+    uint32_t type; // 0: host, 1: switch
+};
 /**
  * @brief Tag for monitoring last data sending time per flow
  */
@@ -134,6 +139,7 @@ class Settings {
     static std::map<uint32_t, uint32_t> hostIp2IdMap;
     static std::map<uint32_t, uint32_t> hostId2IpMap;
     static std::map<uint32_t, uint32_t> hostIp2SwitchId;  // host's IP -> connected Switch's Id
+    static std::vector<host> hostList;
 
     static uint32_t dropped_pkt_sw_ingress;
     static uint32_t dropped_pkt_sw_egress;

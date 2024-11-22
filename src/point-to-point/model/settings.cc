@@ -25,6 +25,8 @@ uint32_t Settings::packet_payload = 1000;
 uint32_t Settings::dropped_pkt_sw_ingress = 0;
 uint32_t Settings::dropped_pkt_sw_egress = 0;
 
+std::vector<host> Settings::hostList;
+
 /* for load balancer */
 std::map<uint32_t, uint32_t> Settings::hostIp2SwitchId;
 

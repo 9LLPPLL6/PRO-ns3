@@ -28,6 +28,7 @@
 #include "ns3/ptr.h"
 #include "ns3/net-device.h"
 #include "ns3/broadcom-node.h"
+#include "ns3/ipv4-ospf-routing.h"
 
 namespace ns3 {
 
@@ -227,6 +228,11 @@ public:
 	  uint32_t m_uc_port_config_cell //per egress port limit
 	  );
 	  */
+  Ipv4OSPFRouting m_ospf;
+  void CheckNeighbors();
+  void CalculateRoute(uint32_t host);
+  void sendLSAToNei(int index);
+
 protected:
 	//yibo
 	//uint32_t GetIngressSP(uint32_t port,uint32_t pgIndex);
