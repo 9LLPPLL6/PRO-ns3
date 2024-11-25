@@ -18,6 +18,7 @@
  * Author: Yuliang Li <yuliangli@g.harvard.com>
  */
 
+#include <cstdio>
 #define __STDC_LIMIT_MACROS 1
 #include "ns3/qbb-net-device.h"
 
@@ -57,8 +58,11 @@
 #include "ns3/uinteger.h"
 #include "ns3/ospf-tag.h"
 #include "ns3/conf-loader.h"
+#include "ns3/ipv4-ospf-routing.h"
 
 #define MAP_KEY_EXISTS(map, key) (((map).find(key) != (map).end()))
+
+#define OSPFPRINTF 0
 
 NS_LOG_COMPONENT_DEFINE("QbbNetDevice");
 
@@ -435,38 +439,83 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
             Simulator::Cancel(m_resumeEvt[qIndex]);
             Resume(qIndex);
         }
-    } else if(ch.l3Prot == 0xFA) {  // OSPF
+    } else if (ch.l3Prot == 0xFA) {  // OSPF
         OSPFTag ospfTag;
         bool found = packet->PeekPacketTag(ospfTag);
         if(found) {
             uint8_t type = ospfTag.getType();
             uint16_t from = ospfTag.getNode();
-            if(type == 1) { // hello
-                m_node->m_ospf->addToNeighbors(from, Simulator::Now().GetSeconds());
+            if (type == 1) {  // hello
+#if OSPFPRINTF
+                printf("Node %d received hello from %d\n", m_node->GetId(), from);
+#endif
+                // m_node->m_ospf->addToNeighbors(from, Simulator::Now().GetSeconds());
+                // m_node->GetObject<Ipv4OSPFRouting>()->addToNeighbors(from,
+                // Simulator::Now().GetSeconds());
+                ProRouting::id2Ospf[m_node->GetId()].addToNeighbors(from, Simulator::Now().GetSeconds());
             } else if (type == 2) {  // LSA
+#if OSPFPRINTF
+                printf("Node %d received LSA from %d\n", m_node->GetId(), from);
+#endif
                 uint16_t lsa_node = ospfTag.getLSANode();
                 if((uint32_t)lsa_node != m_node->GetId()) {
                     uint32_t index = ospfTag.getLSAIndex();
                     vector<uint16_t> lsa = ConfLoader::Instance()->getLSA(index);
-                    const map<uint32_t, vector<uint32_t>>& m_LSAs = m_node->m_ospf.GetLSAs();
+                    vector<uint32_t> lsa_32;
+                    for(auto it = lsa.begin(); it != lsa.end(); ++it) {
+                        lsa_32.push_back((uint32_t)*it);
+                    }
+                    // const map<uint32_t, vector<uint32_t>>& m_LSAs = m_node->m_ospf.GetLSAs();
+                    // const map<uint32_t, vector<uint32_t>>& m_LSAs =
+                    // m_node->GetObject<Ipv4OSPFRouting>()->getLSAs();
+                    const map<uint32_t, vector<uint32_t>>& m_LSAs =
+                        ProRouting::id2Ospf[m_node->GetId()].getLSAs();
                     if(m_LSAs.find((int)lsa_node) == m_LSAs.end()) {
-                        m_node->m_ospf.AddToLSA(lsa_node, lsa);
-                        m_node->sendLSAToNei(index);
+                        ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
+                        ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                        ProRouting::id2Ospf[m_node->GetId()].clearNbr2if();
+                        ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
+                        ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
+                        for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
+                             i++) {
+                            ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                        }
+                        ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
+                        ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
                         return;
                     } else {
-                        vector<uint16_t> my = m_LSAs[(int)lsa_node];
+                        vector<uint32_t> my = m_LSAs.at((int)lsa_node);
                         for (auto it = my.begin(); it != my.end(); ++it) {
-                            if(find(lsa.begin(),lsa.end(),*it) == lsa.end()) {
-                                m_node->m_ospf.AddToLSA(lsa_node, lsa);
-                                m_node->sendLSAToNei(index);
+                            if(find(lsa_32.begin(),lsa_32.end(),*it) == lsa_32.end()) {
+                                // m_node->m_ospf.AddToLSA(lsa_node, lsa);
+                                ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
+                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                                ProRouting::id2Ospf[m_node->GetId()].clearNbr2if();
+                                ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
+                                ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
+                                for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
+                                    i++) {
+                                    ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                                }
+                                ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
+                                ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
                                 return;
                             }
                         }
 
-                        for(auto it = lsa.begin(); it != lsa.end(); ++it) {
+                        for(auto it = lsa_32.begin(); it != lsa_32.end(); ++it) {
                             if(find(my.begin(),my.end(),*it) == my.end()) {
-                                m_node->m_ospf.AddToLSA(lsa_node, lsa);
-                                m_node->sendLSAToNei(index);
+                                // m_node->m_ospf.AddToLSA(lsa_node, lsa);
+                                ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
+                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                                ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
+                                ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
+                                for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
+                                    i++) {
+                                    ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                                }
+                                ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
+                                ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
                                 return;
                             }
                         }

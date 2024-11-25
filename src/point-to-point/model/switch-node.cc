@@ -457,4 +457,6 @@ uint64_t SwitchNode::GetTxBytesOutDev(uint32_t outdev) {
     return m_txBytes[outdev];
 }
 
+std::unordered_map<uint32_t, std::vector<int> > SwitchNode::get_rtTable() { return m_rtTable; }
+
 } /* namespace ns3 */

@@ -22,7 +22,7 @@
 #include "qbb-header.h"
 #include "pro-routing.h"
 
-#define PRODEBUG 1
+#define PRODEBUG 0
 
 namespace ns3 {
 
@@ -659,7 +659,6 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
             }
         } else {
             if(qp->proflr.is_recovery) {
-                printf("#\n");
                 qp->proflr.is_recovery = false;
             }
         }

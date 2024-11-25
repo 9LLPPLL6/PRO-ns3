@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 
+#include <cstdint>
 #include <map>
 #include <queue>
 #include <unordered_map>
@@ -10,6 +11,7 @@
 #include "ns3/address.h"
 #include "ns3/callback.h"
 #include "ns3/event-id.h"
+#include "ns3/ipv4-ospf-routing.h"
 #include "ns3/net-device.h"
 #include "ns3/object.h"
 #include "ns3/packet.h"
@@ -39,4 +41,5 @@ class ProRouting : public Object {
     // static uint64_t sample_t;                         // The sampling interval of sending packets (ns)
     static uint64_t maxdelay;
     static std::map<uint32_t, std::map<uint32_t, uint64_t>> path2rtt;  // srcid,dstid  -> rtt
+    static std::map<uint32_t, Ipv4OSPFRouting> id2Ospf;
 };

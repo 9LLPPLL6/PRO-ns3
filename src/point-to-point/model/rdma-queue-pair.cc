@@ -18,6 +18,8 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE("RdmaQueuePair");
 
+#define LOG 0
+
 /**************************
  * RdmaQueuePair
  *************************/
@@ -241,15 +243,19 @@ uint32_t RdmaQueuePair::GetRePkt(uint32_t lrange, uint32_t rrange) {
 
 //return 0 if not found
 uint32_t RdmaQueuePair::SearchLastI(uint32_t psn) {
+#if LOG
     printf("searchi psn:%d max:%d \n",psn, proflr.psnlist[proflr.psnlist.size()-1]);
     printf("time:%ld\n", Simulator::Now().GetNanoSeconds());
+#endif
     int i = proflr.psnlist.size() - 1;
     for (; i > 0; i--) {
         //printf("psnlist[%d]: %d\n", i-1, proflr.psnlist[i-1]);
         if (proflr.psnlist[i - 1] < psn && proflr.psnlist[i] >= psn) 
             return i;
     }
-    printf("psn[0]:%d psn[1]:%d  psn: %d\n",proflr.psnlist[0],proflr.psnlist[1], psn);
+#if LOG
+    printf("psn[0]:%d psn[1]:%d  psn: %d\n", proflr.psnlist[0], proflr.psnlist[1], psn);
+#endif
     return 0;
 }
 

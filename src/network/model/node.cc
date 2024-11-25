@@ -32,8 +32,9 @@
 #include "ns3/global-value.h"
 #include "ns3/boolean.h"
 #include "ns3/simulator.h"
-#include "ns3/ipv4-ospf-routing.h"
-#include "ns3/settings.h"
+// #include "ns3/ipv4-ospf-routing.h"
+// #include "ns3/settings.h"
+#include "ns3/qbb-net-device.h"
 
 NS_LOG_COMPONENT_DEFINE ("Node");
 
@@ -333,11 +334,9 @@ Node::NotifyDeviceAdded (Ptr<NetDevice> device)
       (*i) (device);
     }  
 }
- 
-uint32_t 
-Node::GetNodeType()
-{
-	return m_node_type;
+
+uint32_t Node::GetNodeType() {
+    return m_node_type;
 }
 
 bool Node::SwitchReceiveFromDevice(Ptr<NetDevice> device, Ptr<Packet> packet, CustomHeader &ch){
@@ -349,114 +348,123 @@ void Node::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Packet> p)
 	NS_ASSERT_MSG(false, "Calling NotifyDequeue() on a non-switch node or this function is not implemented");
 }
 
-void Node::CalculateRoute(uint32_t host) {
-    // queue for the BFS.
-    std::vector<uint32_t> q;
-    // Distance from the host to each node.
-    std::map<uint32_t, int> dis;
+// void Node::CalculateRoute(uint32_t host) {
+//     // queue for the BFS.
+//     std::vector<uint32_t> q;
+//     // Distance from the host to each node.
+//     std::map<uint32_t, int> dis;
 
-    //init 
-    q.push_back(host);
-    dis[host] = 0;
+//     Ptr<Ipv4OSPFRouting> m_ospf = this->GetObject<Ipv4OSPFRouting>();
 
-    //BFS
-    for (int i = 0; i < (int)q.size(); i++) {
-        uint32_t now = q[i];
-        int d = dis[now];
-        for(auto it = m_ospd->nbr2if[now].begin(); it != m_ospd->nbr2if[now].end(); it++) {
-            if(!it->second.up) {
-                continue;
-            }
-            uint32_t next = it->first;
-            // If 'next' have not been visited.
-            if(dis.find(next) == dis.end()) {
-                dis[next] = d + 1;
-                if(Settings::hostList[next].type == 1) {
-                    q.push_back(next);
-                }
-            }
-            // if 'now' is on the shortest path from 'next' to 'host'.
-            if(dis[next] == d + 1) {
-                m_ospf->nextHop[next][host].push_back(now);
-            }
-        }
-    }
-}
+//     //init 
+//     q.push_back(host);
+//     dis[host] = 0;
 
-void SetRoutingEntries() {
-    for(auto it = m_ospf->nextHop.begin(); it != m_ospf->nextHop.end(); it++) {
-        uint32_t node = it->first;
-        if(node == m_id) {
-            auto &table = it->second;
-            for (auto j = table.begin(); j != table.end(); ++j) {
-                // The destination node id.
-                uint32_t dst = j->first;
-                Ipv4Address dstAddr = Ipv4Address(Settings::hostList[dst].ip);
-                vector<uint32_t> nexts = j->second;
-                for (int k = 0; k < (int)nexts.size(); k++) {
-                    uint32_t next = nexts[k];
-                    uint32_t interface = m_ospf->nbr2if[node][next].idx;
-                    m_ospf->AddTableEntry(dstAddr, interface);
-                } 
-            }
-        }
-    }
-}
+//     //BFS
+//     for (int i = 0; i < (int)q.size(); i++) {
+//         uint32_t now = q[i];
+//         int d = dis[now];
+//         for(auto it = m_ospf->nbr2if[now].begin(); it != m_ospf->nbr2if[now].end(); it++) {
+//             if(!it->second.up) {
+//                 continue;
+//             }
+//             uint32_t next = it->first;
+//             // If 'next' have not been visited.
+//             if(dis.find(next) == dis.end()) {
+//                 dis[next] = d + 1;
+//                 if(Settings::hostList[next].type == 1) {
+//                 // if()
+//                     q.push_back(next);
+//                 }
+//             }
+//             // if 'now' is on the shortest path from 'next' to 'host'.
+//             if(dis[next] == d + 1) {
+//                 m_ospf->nextHop[next][host].push_back(now);
+//             }
+//         }
+//     }
+// }
 
-void Node::CheckNeighbors() {
-  int index = m_ospf->checkNeighbors();
 
-  if(index != -1) {
-      // send lsa
-      const std::map<uint32_t, uint32_t>& hostId2IpMap = m_ospf->getHostId2IpMap();
-      std::map<uint32_t, Interface> tmp = m_ospf->nbr2if[m_id];
-      for (int i = 0; i < m_devices.size(); i++) {
-          for(auto it = tmp.begin(); it != tmp.end(); it++) {
-              if(it->second.idx == i) {
-                  uint32_t ip = hostId2IpMap[it->first];
-                  m_devices[i]->sendLsa(ip, index);
-              }
-          }
-      }
+// void Node::SetRoutingEntries() {
+//     Ptr<Ipv4OSPFRouting> m_ospf = this->GetObject<Ipv4OSPFRouting>();
+//     for(auto it = m_ospf->nextHop.begin(); it != m_ospf->nextHop.end(); it++) {
+//         uint32_t node = it->first;
+//         if(node == m_id) {
+//             auto &table = it->second;
+//             for (auto j = table.begin(); j != table.end(); ++j) {
+//                 // The destination node id.
+//                 uint32_t dst = j->first;
+//                 Ipv4Address dstAddr = Ipv4Address(Settings::hostList[dst].ip);
+//                 vector<uint32_t> nexts = j->second;
+//                 for (int k = 0; k < (int)nexts.size(); k++) {
+//                     uint32_t next = nexts[k];
+//                     uint32_t interface = m_ospf->nbr2if[node][next].idx;
+//                     m_ospf->AddTableEntry(dstAddr, interface);
+//                 } 
+//             }
+//         }
+//     }
+// }
 
-      for(auto it1 = m_ospf->nbr2if.begin(); it1 != m_ospf->nbr2if.end(); it1++) {
-          // clear all up flags
-          for(auto it2 = it1->second.begin(); it2 != it1->second.end(); it2++) {
-              it2->second.up = false;
-          }
-      }
-      // update nbr2if
-      std::map<uint32_t, std::vector<uint32_t>> lsas = m_ospf->getLsas();
-      for(auto it = lsas.begin(); it != lsas.end(); it++) {
-          uint32_t nodeId = it->first;
-          std::vector<uint32_t> neighbors = it->second;
-          for(auto it2 = neighbors.begin(); it2 != neighbors.end(); it2++) {
-              m_ospf->nbr2if[nodeId][*it2].up = true;
-              m_ospf->nbr2if[*it2][nodeId].up = true;
-          }
-      }
-      //clear nexthop
-      m_ospf->nextHop.clear();
-      // calculate route
-      for(auto it = Settings::hostList.begin(); it != Settings::hostList.end(); it++) {
-          CalculateRoute(it->id);
-      }
-      m_ospf->ClearTable();
-      // set routing entries
-      SetRoutingEntries();
-  }
-}
+// void Node::CheckNeighbors() {
+//   Ptr<Ipv4OSPFRouting> m_ospf = this->GetObject<Ipv4OSPFRouting>();
+//   int index = m_ospf->checkNeighbors();
 
-void Node::sendLSAToNei(int index) {
-    const std::map<uint32_t, uint32_t> &hostId2IpMap = m_ospf->getHostId2IpMap();
-    std::map<uint32_t, Interface> tmp = m_ospf->nbr2if[m_id];
-    for (int i = 0; i < m_devices.size(); i++) {
-        for (auto it = tmp.begin(); it != tmp.end(); it++) {
-            if (it->second.idx == i) {
-                uint32_t ip = hostId2IpMap[it->first];
-                m_devices[i]->sendLsa(ip, index);
-            }
-        }
-    }
-}
+//   if(index != -1) {
+//       // send lsa
+//       const std::map<uint32_t, uint32_t>& hostId2IpMap = m_ospf->getHostId2IpMap();
+//       std::map<uint32_t, Interface> tmp = m_ospf->nbr2if[m_id];
+//       for (int i = 0; i < m_devices.size(); i++) {
+//           for(auto it = tmp.begin(); it != tmp.end(); it++) {
+//               if(it->second.idx == i) {
+//                   uint32_t ip = hostId2IpMap.at(it->first);
+//                   Ptr<QbbNetDevice> qbbdev = DynamicCast<QbbNetDevice>(m_devices[i]);
+//                   qbbdev->sendLSAMessage(ip, index);
+//               }
+//           }
+//       }
+
+//       for(auto it1 = m_ospf->nbr2if.begin(); it1 != m_ospf->nbr2if.end(); it1++) {
+//           // clear all up flags
+//           for(auto it2 = it1->second.begin(); it2 != it1->second.end(); it2++) {
+//               it2->second.up = false;
+//           }
+//       }
+//       // update nbr2if
+//       std::map<uint32_t, std::vector<uint32_t>> lsas = m_ospf->getLSAs();
+//       for(auto it = lsas.begin(); it != lsas.end(); it++) {
+//           uint32_t nodeId = it->first;
+//           std::vector<uint32_t> neighbors = it->second;
+//           for(auto it2 = neighbors.begin(); it2 != neighbors.end(); it2++) {
+//               m_ospf->nbr2if[nodeId][*it2].up = true;
+//               m_ospf->nbr2if[*it2][nodeId].up = true;
+//           }
+//       }
+//       //clear nexthop
+//       m_ospf->nextHop.clear();
+//       // calculate route
+//       for(auto it = Settings::hostList.begin(); it != Settings::hostList.end(); it++) {
+//           CalculateRoute(it->id);
+//       }
+//       m_ospf->ClearTableEntry();
+//       // set routing entries
+//       SetRoutingEntries();
+//   }
+// }
+
+// void Node::sendLSAToNei(int index) {
+//     Ptr<Ipv4OSPFRouting> m_ospf = this->GetObject<Ipv4OSPFRouting>();
+//     const std::map<uint32_t, uint32_t> &hostId2IpMap = m_ospf->getHostId2IpMap();
+//     std::map<uint32_t, Interface> tmp = m_ospf->nbr2if[m_id];
+//     for (int i = 0; i < m_devices.size(); i++) {
+//         for (auto it = tmp.begin(); it != tmp.end(); it++) {
+//             if (it->second.idx == i) {
+//                 uint32_t ip = hostId2IpMap.at(it->first);
+//                 Ptr<QbbNetDevice> qbbdev = DynamicCast<QbbNetDevice>(m_devices[i]);
+//                 qbbdev->sendLSAMessage(ip, index);
+//             }
+//         }
+//     }
+// }
 } // namespace ns3
