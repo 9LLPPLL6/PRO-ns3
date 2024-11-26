@@ -18,7 +18,9 @@
  * Author: Yuliang Li <yuliangli@g.harvard.com>
  */
 
+#include <cstdint>
 #include <cstdio>
+#include "ns3/ipv4-address.h"
 #define __STDC_LIMIT_MACROS 1
 #include "ns3/qbb-net-device.h"
 
@@ -472,13 +474,14 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
                         ProRouting::id2Ospf[m_node->GetId()].getLSAs();
                     if(m_LSAs.find((int)lsa_node) == m_LSAs.end()) {
                         ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
-                        ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                        ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(index, lsa_node);
                         ProRouting::id2Ospf[m_node->GetId()].clearNbr2if();
                         ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
                         ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
                         for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
                              i++) {
-                            ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                            if(ConfLoader::Instance()->getNodeContainer().Get(i)->GetNodeType() == 0)
+                                ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
                         }
                         ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
                         ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
@@ -489,13 +492,14 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
                             if(find(lsa_32.begin(),lsa_32.end(),*it) == lsa_32.end()) {
                                 // m_node->m_ospf.AddToLSA(lsa_node, lsa);
                                 ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
-                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(index, lsa_node);
                                 ProRouting::id2Ospf[m_node->GetId()].clearNbr2if();
                                 ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
                                 ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
-                                for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
-                                    i++) {
-                                    ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                                for (int i = 0;
+                                     i < ConfLoader::Instance()->getNodeContainer().GetN(); i++) {
+                                    if(ConfLoader::Instance()->getNodeContainer().Get(i)->GetNodeType() == 0)
+                                        ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
                                 }
                                 ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
                                 ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
@@ -507,12 +511,13 @@ void QbbNetDevice::Receive(Ptr<Packet> packet) {
                             if(find(my.begin(),my.end(),*it) == my.end()) {
                                 // m_node->m_ospf.AddToLSA(lsa_node, lsa);
                                 ProRouting::id2Ospf[m_node->GetId()].AddToLSA(lsa_node, lsa_32);
-                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(lsa_node, index);
+                                ProRouting::id2Ospf[m_node->GetId()].sendLSAMessage(index, lsa_node);
                                 ProRouting::id2Ospf[m_node->GetId()].updateNbr2if();
                                 ProRouting::id2Ospf[m_node->GetId()].clearNextHop();
-                                for (int i = 0; i < ConfLoader::Instance()->getNodeContainer().GetN();
-                                    i++) {
-                                    ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
+                                for (int i = 0;
+                                     i < ConfLoader::Instance()->getNodeContainer().GetN(); i++) {
+                                    if(ConfLoader::Instance()->getNodeContainer().Get(i)->GetNodeType() == 0)
+                                        ProRouting::id2Ospf[m_node->GetId()].CalculateRoute(i);
                                 }
                                 ProRouting::id2Ospf[m_node->GetId()].ClearTableEntry();
                                 ProRouting::id2Ospf[m_node->GetId()].SetRoutingEntries();
@@ -549,6 +554,12 @@ bool QbbNetDevice::SwitchSend(uint32_t qIndex, Ptr<Packet> packet, CustomHeader 
     DequeueAndTransmit();
     return true;
 }
+
+// bool QbbNetDevice::PktSend(Ptr<Packet> packet) {
+    
+//         TransmitStart(p);
+        
+// }
 
 uint32_t QbbNetDevice::SendPfc(uint32_t qIndex, uint32_t type) {
     if (!m_qbbEnabled) return 0;
@@ -587,15 +598,16 @@ void QbbNetDevice::sendHello(uint32_t ip) {
     AddHeader(p, 0x800);
     CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
     p->PeekHeader(ch);
-    SwitchSend(0, p, ch);
+    // SwitchSend(0, p, ch);
+    TransmitStart(p);
 }
 
-void QbbNetDevice::sendLSAMessage(uint32_t ip, int index) {
+void QbbNetDevice::sendLSAMessage(uint32_t ip, int index, uint32_t lsahostid) {
     Ptr<Packet> p = Create<Packet>(0);
     OSPFTag ospfTag;
     ospfTag.setType(2); // LSA
     ospfTag.setNode(m_node->GetId());
-    ospfTag.setLSA(m_node->GetId(), index);
+    ospfTag.setLSA(lsahostid, index);
     p->AddPacketTag(ospfTag);
     Ipv4Header ipv4h;
     ipv4h.SetProtocol(0xFA);
@@ -608,7 +620,8 @@ void QbbNetDevice::sendLSAMessage(uint32_t ip, int index) {
     AddHeader(p, 0x800);
     CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header | CustomHeader::L4_Header);
     p->PeekHeader(ch);
-    SwitchSend(0, p, ch);
+    // SwitchSend(0, p, ch);
+    TransmitStart(p);
 }
 
 bool QbbNetDevice::Attach(Ptr<QbbChannel> ch) {

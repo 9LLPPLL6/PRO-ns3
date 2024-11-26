@@ -30,6 +30,7 @@
 #include "ns3/ipv4-header.h"
 #include "ns3/udp-header.h"
 #include "ns3/rdma-queue-pair.h"
+#include <cstdint>
 #include <vector>
 #include<map>
 #include <unordered_map>
@@ -136,7 +137,8 @@ public:
 
    uint32_t SendPfc(uint32_t qIndex, uint32_t type); // type: 0 = pause, 1 = resume
    void sendHello(uint32_t ip);
-   void sendLSAMessage(uint32_t ip, int index);
+   void sendLSAMessage(uint32_t ip, int index, uint32_t lsahostid);
+   bool PktSend(Ptr<Packet> packet);
 
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceEnqueue;
    TracedCallback<Ptr<const Packet>, uint32_t> m_traceDequeue;

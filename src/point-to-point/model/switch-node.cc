@@ -1,4 +1,7 @@
 #include "switch-node.h"
+#include <cstdint>
+#include <cstdio>
+#include <iostream>
 
 #include "assert.h"
 #include "ns3/boolean.h"
@@ -11,11 +14,14 @@
 #include "ns3/letflow-routing.h"
 #include "ns3/packet.h"
 #include "ns3/pause-header.h"
+#include "ns3/ptr.h"
 #include "ns3/settings.h"
 #include "ns3/uinteger.h"
 #include "ppp-header.h"
 #include "qbb-net-device.h"
 #include "pro-routing.h"
+
+#define LOG 1
 
 namespace ns3 {
 
@@ -166,11 +172,77 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
         if(this->GetId() == switchId) {
             return DoLbFlowECMP(p, ch, nexthops);
         }
-        // return (uint32_t)((uint8_t *)&ch.udp.sport)[0];
-        return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[0];
+        uint32_t portNum = ProRouting::id2Ospf[this->GetId()].m_rtTable[dstip].size();
+        uint32_t healthNum = ProRouting::id2Ospf[this->GetId()].dst2PortNum[dstip];
+#if LOG
+        std::cout << "m_id:" << m_id << "--->" << switchId <<" now portNum: " << portNum << " ALLNum: " << healthNum << std::endl;
+#endif
+        if (portNum != healthNum) {  // link down, use AR to route
+#if LOG
+            printf("AR\n");
+#endif
+            uint32_t qIndex;
+            if (ch.l3Prot == 0xFF || ch.l3Prot == 0xFE ||
+                (m_ackHighPrio &&
+                (ch.l3Prot == 0xFD ||
+                ch.l3Prot == 0xFC))) {  // QCN or PFC or ACK/NACK, go highest priority
+                qIndex = 0;               // high priority
+            } else {
+                qIndex = (ch.l3Prot == 0x06 ? 1 : ch.udp.pg);  // if TCP, put to queue 1. Otherwise, it
+                                                            // would be 3 (refer to trafficgen)
+            }
+            uint32_t min = 1000000000;
+            uint32_t minPort = 0;
+            for (int i = 0; i < portNum; i++) {
+                uint32_t port = ProRouting::id2Ospf[this->GetId()].m_rtTable[dstip][i];
+                uint32_t qlen =
+                    DynamicCast<QbbNetDevice>(this->GetDevice(port))->GetQueue()->GetNBytes(qIndex);
+                if (qlen < min) {
+                    min = qlen;
+                    minPort = port;
+                }
+            }
+            return minPort;
+        } else {  // health , do PRO
+            return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[0];
+        }
+    } else {
+        uint32_t dstip = ch.dip;
+        uint32_t portNum = ProRouting::id2Ospf[this->GetId()].m_rtTable[dstip].size();
+        uint32_t healthNum = ProRouting::id2Ospf[this->GetId()].dst2PortNum[dstip];
+#if LOG
+        std::cout << "m_id:" << m_id << "--->" << Settings::hostIp2SwitchId[dstip] <<" now portNum: " << portNum << " ALLNum: " << healthNum << std::endl;
+#endif
+        if (portNum != healthNum) {  // link down, use AR to route
+#if LOG
+            printf("AR\n");
+#endif
+            uint32_t qIndex;
+            if (ch.l3Prot == 0xFF || ch.l3Prot == 0xFE ||
+                (m_ackHighPrio &&
+                (ch.l3Prot == 0xFD ||
+                ch.l3Prot == 0xFC))) {  // QCN or PFC or ACK/NACK, go highest priority
+                qIndex = 0;               // high priority
+            } else {
+                qIndex = (ch.l3Prot == 0x06 ? 1 : ch.udp.pg);  // if TCP, put to queue 1. Otherwise, it
+                                                            // would be 3 (refer to trafficgen)
+            }
+            uint32_t min = 1000000000;
+            uint32_t minPort = 0;
+            for (int i = 0; i < portNum; i++) {
+                uint32_t port = ProRouting::id2Ospf[this->GetId()].m_rtTable[dstip][i];
+                uint32_t qlen =
+                    DynamicCast<QbbNetDevice>(this->GetDevice(port))->GetQueue()->GetNBytes(qIndex);
+                if (qlen < min) {
+                    min = qlen;
+                    minPort = port;
+                }
+            }
+            return minPort;
+        } else {  // health , do PRO
+            return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[1];
+        }
     }
-    // return (uint32_t)((uint8_t *)&ch.udp.sport)[1];  // aggr
-    return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[1];
 }
 
 /*----------------------------------*/

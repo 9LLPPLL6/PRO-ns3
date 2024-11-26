@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -43,6 +44,7 @@
 #include "ns3/error-model.h"
 #include "ns3/global-route-manager.h"
 #include "ns3/internet-module.h"
+#include "ns3/ipv4-address.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/letflow-routing.h"
 #include "ns3/packet.h"
@@ -688,20 +690,9 @@ void SetRoutingEntries() {
                 uint32_t interface = nbr2if[node][next].idx;
                 if (node->GetNodeType() == 1) {
                     DynamicCast<SwitchNode>(node)->AddTableEntry(dstAddr, interface);
-                    if(Settings::lb_mode == 12) {
-                        // node->m_ospf.AddTableEntry(dstAddr, interface);
-                        // node->GetObject<Ipv4OSPFRouting>()->AddTableEntry(dstAddr, interface);
-                        ProRouting::id2Ospf[node->GetId()].AddTableEntry(dstAddr, interface);
-                    }
                 }
                 else {
                     node->GetObject<RdmaDriver>()->m_rdma->AddTableEntry(dstAddr, interface);
-                    if(Settings::lb_mode == 12) {
-                        // node->m_ospf.AddTableEntry(dstAddr, interface);
-                        //node->GetObject<Ipv4OSPFRouting>()->AddTableEntry(dstAddr, interface);
-                        ProRouting::id2Ospf[node->GetId()].AddTableEntry(dstAddr, interface);
-
-                    }
                 }
             }
         }
@@ -763,23 +754,21 @@ void initLSAs() {
         }
     }
     for (int i = 0; i < n.GetN(); i++) {
-        // n.Get(i)->m_ospf.setLSA(LSAs);
-        // n.Get(i)->GetObject<Ipv4OSPFRouting>()->setLSA(LSAs);
         ProRouting::id2Ospf[i].setLSA(LSAs);
     }
 }
 
 void sendHelloMessage(Ptr<Node> node) {
-    // std::vector<Ptr<NetDevice>> devices = node->m_devices;
     std::map<Ptr<Node>, Interface> tmp = nbr2if[node];
+    
     for (int i = 0; i < node->GetNDevices(); i++) {
         uint32_t dstIP;
         for (auto it = tmp.begin(); it != tmp.end(); ++it) {
-            if(i == it->second.idx) {
+            if (i == it->second.idx) {
                 dstIP = it->first->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal().Get();
-                if(i == 0) continue;
+                if (i == 0) continue;
                 Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(node->GetDevice(i));
-                dev->sendHello(dstIP);
+                dev->sendHello(Ipv4Address("255.255.255.255").Get());
             }
         }
     }
@@ -1864,6 +1853,28 @@ int main(int argc, char *argv[]) {
                     ProRouting::id2Ospf[i].m_rtTable = sw->get_rtTable();
                 }
             }
+
+            // init available port number for ospf
+            for (int i = 0; i < n.GetN(); i++) {
+                Ptr<Node> node = n.Get(i);
+                if (node->GetNodeType() == 0) {  // host
+                    auto rtTable = node->GetObject<RdmaDriver>()->m_rdma->m_rtTable;
+                    for (auto it = rtTable.begin(); it != rtTable.end(); ++it) {
+                        uint32_t dstip = it->first;
+                        uint32_t num = it->second.size();
+                        ProRouting::id2Ospf[i].dst2PortNum[dstip] = num;
+                    }
+                }
+                if (node->GetNodeType() == 1) {  // switch
+                    auto rtTable = node->GetObject<SwitchNode>()->get_rtTable();
+                    for (auto it = rtTable.begin(); it != rtTable.end(); ++it) {
+                        uint32_t dstip = it->first;
+                        uint32_t num = it->second.size();
+                        ProRouting::id2Ospf[i].dst2PortNum[dstip] = num;
+                    }
+                }
+            }
+    
             // send hello
             for(int i = 0; i < n.GetN(); i++) {
                 Ptr<Node> node = n.Get(i);
@@ -1876,6 +1887,23 @@ int main(int argc, char *argv[]) {
                 Simulator::Schedule(Seconds(flowgen_start_time + UnavailableInterval), &checkNeighbor, node);
             }
         }
+
+        // debug
+        // std::cout << "-----------" << std::endl;
+        // std::cout << "id1 devices: " << n.Get(1)->GetNDevices() << std::endl;
+        // std::cout << "id1 devices: " << n.Get(1)->GetDevice(0)->IsQbb() << std::endl;
+        // std::cout << "nb" << nbr2if[n.Get(128)][n.Get(1)].idx << std::endl;
+        //
+        // for (auto it = nbr2if.begin(); it != nbr2if.end(); ++it) {
+        //     for (auto it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        //         std::cout << it->first->GetId() << " -->" << it2->first->GetId() << " " <<
+        //         it2->second.idx <<  "up: " << it2->second.up  <<std::endl;
+        //     }
+        // }
+        // for(int i = 0;  i < serverAddress.size(); i++) {
+        //     std::cout << "id :"<< i << "-->ip:  " << serverAddress[i].Get() << std::endl;
+        // }
+        // exit(0);
 
 
         // m_outPort2BitRateMap - only for Conga
@@ -1964,10 +1992,10 @@ int main(int argc, char *argv[]) {
     topof.close();
 
     // schedule link down
-    if (link_down_time > 0) {
-    // if (false) {  // test ospf
-        // link_down_A = 128;
-        // link_down_B = 136;
+    // if (link_down_time > 0) {
+    if (true) {  // test ospf
+        link_down_A = 128;
+        link_down_B = 136;
         Simulator::Schedule(Seconds(flowgen_start_time + UnavailableInterval),
                             &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
     }
