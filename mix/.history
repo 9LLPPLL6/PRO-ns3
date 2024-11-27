@@ -127,3 +127,7 @@ date,id,ccmode,lbmode,cwh_tx_expiry_time,cwh_extra_reply_deadline,cwh_path_pause
 ./waf --run 'scratch/network-load-balance /users/lpl/ns-allinone-3.19/ns-3.19/mix/output/515072485/config.txt' > /users/lpl/ns-allinone-3.19/ns-3.19/mix/output/515072485/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /users/lpl/ns-allinone-3.19/ns-3.19/mix/output/515072485/config.txt'
 
+11/27/24,309457473,1,12,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /root/ns-3.19/mix/output/309457473/config.txt' > /root/ns-3.19/mix/output/309457473/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /root/ns-3.19/mix/output/309457473/config.txt'
+
