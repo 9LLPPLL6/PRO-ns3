@@ -202,6 +202,9 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
                     minPort = port;
                 }
             }
+#if LOG
+            cout << "minPort: " << minPort << endl;
+#endif
             return minPort;
         } else {  // health , do PRO
             return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[0];
@@ -238,6 +241,9 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
                     minPort = port;
                 }
             }
+#if LOG
+            cout << "minPort: " << minPort << endl;
+#endif
             return minPort;
         } else {  // health , do PRO
             return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[1];
