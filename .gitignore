@@ -4,12 +4,9 @@ build/*
 .lock-waf*
 .vscode/*
 
-analyze/raw_basic/*
-mix/output/*
-mix/*_flow.txt
 config/*_flow.txt
-analysis/figures/*.pdf
 **/*.pyc
 .vscode
 __pycache__
+mix/output/*/config.log
 debugLog/*
