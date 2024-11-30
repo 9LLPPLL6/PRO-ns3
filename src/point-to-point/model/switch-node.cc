@@ -21,7 +21,7 @@
 #include "qbb-net-device.h"
 #include "pro-routing.h"
 
-#define LOG 1
+#define LOG 0
 
 namespace ns3 {
 

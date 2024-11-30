@@ -1993,7 +1993,7 @@ int main(int argc, char *argv[]) {
 
     // schedule link down
     // if (link_down_time > 0) {
-    if (true) {  // test ospf
+    if (false) {  // test ospf
         link_down_A = 128;
         link_down_B = 136;
         Simulator::Schedule(Seconds(flowgen_start_time + UnavailableInterval),
