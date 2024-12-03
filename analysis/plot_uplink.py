@@ -57,6 +57,7 @@ M = [
     's',
     'x',
     'v',
+    'D',
     'D'
 ]
 
@@ -66,6 +67,7 @@ H = [
     '***',
     'x',
     'xxx',
+    'x'
 ]
 
 
@@ -204,7 +206,7 @@ def main():
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
         
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave","pro"]
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -268,7 +270,8 @@ def main():
                             for vec in v_t:
                                 if np.average(vec) == 0:
                                     continue
-                                val = (np.max(vec) - np.min(vec)) / np.average(vec) * 100
+                                # val = (np.max(vec) - np.min(vec)) / np.average(vec) * 100
+                                val = (np.max(vec)) / np.average(vec) * 100
                                 ts_data_arr.append(val)
 
                         cdf_ts_data_arr = getCdfFromArray(ts_data_arr)
