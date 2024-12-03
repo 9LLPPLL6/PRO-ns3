@@ -197,6 +197,7 @@ public:
   std::vector<ECNAccount> *m_ecn_source;
 
 public:
+  	uint32_t pro_c = 0;
 	Ptr<RdmaEgressQueue> m_rdmaEQ;
 	void RdmaEnqueueHighPrioQ(Ptr<Packet> p);
 
