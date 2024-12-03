@@ -111,3 +111,7 @@ date,id,ccmode,lbmode,cwh_tx_expiry_time,cwh_extra_reply_deadline,cwh_path_pause
 ./waf --run 'scratch/network-load-balance /root/ns-3.19/mix/output/686453282/config.txt' > /root/ns-3.19/mix/output/686453282/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /root/ns-3.19/mix/output/686453282/config.txt'
 
+12/03/24,445609162,1,12,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /root/ns-3.19/mix/output/445609162/config.txt' > /root/ns-3.19/mix/output/445609162/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /root/ns-3.19/mix/output/445609162/config.txt'
+
