@@ -26,6 +26,7 @@ lb_modes = {
     6: "letflow",
     9: "conweave",
     12: "pro",
+    14: "reps",
 }
 topo2bdp = {
     "leaf_spine_128_100G_OS2": 104000,  # 2-tier
@@ -56,7 +57,9 @@ M = [
     's',
     'x',
     'v',
-    'D'
+    'D',
+    '^',
+    '>',
 ]
 
 H = [
@@ -65,6 +68,8 @@ H = [
     '***',
     'x',
     'xxx',
+    '+++',
+    'O',
 ]
 
 def setup():
@@ -222,7 +227,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave","pro"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave","pro", "reps"]
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]
@@ -275,7 +280,7 @@ def main():
         
         xvals = [i for i in range(STEP, 100 + STEP, STEP)]
 
-        lbmode_order = ["fecmp", "conga", "letflow", "conweave","pro"]
+        lbmode_order = ["fecmp", "conga", "letflow", "conweave","pro","reps"]
         for tgt_lbmode in lbmode_order:
             for vv in v:
                 config_id = vv[0]

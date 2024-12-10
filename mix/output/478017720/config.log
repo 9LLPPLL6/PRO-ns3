@@ -1,0 +1,12 @@
+Waf: Entering directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+[1250/1447] cxx: src/point-to-point/model/switch-node.cc -> build/src/point-to-point/model/switch-node.cc.1.o
+../src/point-to-point/model/switch-node.cc: In member function ‘void ns3::SwitchNode::DoSwitchSend(ns3::Ptr<ns3::Packet>, ns3::CustomHeader&, uint32_t, uint32_t)’:
+../src/point-to-point/model/switch-node.cc:353:10: error: ‘err’ is not a member of ‘std’; did you mean ‘errc’?
+  353 |     std::err << m_devices[outDev]->GetTypeId().GetName() << std::endl;
+      |          ^~~
+      |          errc
+Waf: Leaving directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+Build failed
+ -> task in 'ns3-point-to-point' failed (exit status 1): 
+	{task 140047949397392: cxx switch-node.cc -> switch-node.cc.1.o}
+['/usr/bin/g++', '-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing', '-g', '-fPIC', '-pthread', '-I.', '-I..', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../src/point-to-point/model/switch-node.cc', '-c', '-o', 'src/point-to-point/model/switch-node.cc.1.o']

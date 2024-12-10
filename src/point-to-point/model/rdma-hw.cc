@@ -6,6 +6,8 @@
 #include <ns3/udp-header.h>
 
 #include <climits>
+#include <cstdint>
+#include <iostream>
 
 #include "cn-header.h"
 #include "flow-stat-tag.h"
@@ -13,16 +15,20 @@
 #include "ns3/data-rate.h"
 #include "ns3/double.h"
 #include "ns3/flow-id-num-tag.h"
+#include "ns3/packet.h"
 #include "ns3/pointer.h"
 #include "ns3/ppp-header.h"
+#include "ns3/ptr.h"
+#include "ns3/qbb-channel.h"
 #include "ns3/settings.h"
 #include "ns3/switch-node.h"
 #include "ns3/uinteger.h"
 #include "ppp-header.h"
 #include "qbb-header.h"
 #include "pro-routing.h"
+#include "src/point-to-point/model/reps-tag.h"
 
-#define PRODEBUG 1
+#define PRODEBUG 0
 
 namespace ns3 {
 
@@ -356,6 +362,21 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
             exit(1);
         }
 
+        if(Settings::lb_mode == 14 && m_irn) {
+            std::cerr << "ERROR: IRN and REPSLB cannot be used together." << std::endl;
+            exit(1);
+        }
+
+        if (Settings::lb_mode == 14) {
+            if (x == 2) {
+                seqh.SetIrnNack(ch.udp.seq);
+                seqh.SetIrnNackSize(payload_size);
+            } else {
+                seqh.SetIrnNack(0);  // NACK without ackSyndrome (ACK) in loss recovery mode
+                seqh.SetIrnNackSize(0);
+            }
+        }
+
         if(Settings::lb_mode == 12) {
             //if(x == 2) {
                 seqh.SetIrnNack(ch.udp.seq);
@@ -393,6 +414,14 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch) {
             }
         }
 
+        if (Settings::lb_mode == 14) {
+            RepsTag repsTag;
+            bool found = p->PeekPacketTag(repsTag);
+            if (found) {
+                newp->AddPacketTag(repsTag);
+            }
+        }
+        
         newp->AddHeader(head);
         AddHeader(newp, 0x800);  // Attach PPP header
 
@@ -532,6 +561,33 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
             if (qp->irn.m_recovery && qp->snd_una >= qp->irn.m_recovery_seq) {
                 qp->irn.m_recovery = false;
             }
+        } else if (Settings::lb_mode == 14) {
+            // uint32_t dstip = ch.dip;
+            // uint32_t srcip = ch.sip;
+            // uint32_t dstid = Settings::hostIp2IdMap[dstip];
+            // uint32_t srcid = Settings::hostIp2IdMap[srcip];
+            // std::cout << "srcid: " << dstid << "--->"
+            //           << " dstid: " << srcid << std::endl;
+            
+            qp->lastPktRtt = dev->repsRouting.OnAck(p);
+
+            if (ch.ack.irnNackSize != 0) {
+                // ch.ack.irnNack contains the seq triggered this NACK
+                qp->irn.m_sack.sack(ch.ack.irnNack, ch.ack.irnNackSize);
+            }
+            uint32_t sack_seq, sack_len;
+            if (qp->irn.m_sack.peekFrontBlock(&sack_seq, &sack_len)) {
+                if(qp->snd_una >= sack_seq && qp->snd_una < sack_seq + sack_len) {
+                    qp->snd_una =  sack_seq + sack_len;
+                }
+            }
+
+            qp->irn.m_sack.discardUpTo(qp->snd_una);
+
+            if (qp->snd_nxt < qp->snd_una) {
+                qp->snd_nxt = qp->snd_una;
+            }
+
         } else if(Settings::lb_mode == 12) {
 
 #if PRODEBUG
@@ -602,6 +658,8 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch) {
                 qp->irn.m_recovery = false;
             }
         }
+    } else if (Settings::lb_mode == 14) {
+        
     } else if(Settings::lb_mode == 12) {
 #if PRODEBUG
         printf("set is_rece\n");
@@ -745,6 +803,29 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             return 0;  // should not reach here
         }
 
+        //REPS
+        if (Settings::lb_mode == 14) {
+            q->ReceiverNextExpectedSeq += size - (expected - seq);
+            
+            uint32_t sack_seq, sack_len;
+            if (q->m_irn_sack_.peekFrontBlock(&sack_seq, &sack_len)) {
+                if (sack_seq <= q->ReceiverNextExpectedSeq)
+                    q->ReceiverNextExpectedSeq +=
+                        (sack_len - (q->ReceiverNextExpectedSeq - sack_seq));
+            }
+            q->m_irn_sack_.discardUpTo(q->ReceiverNextExpectedSeq);
+            if(q->ReceiverNextExpectedSeq >= q->m_milestone_rx) {
+                q->m_milestone_rx += m_ack_interval;
+            }
+            if (q->m_irn_sack_.IsEmpty()) {
+                return 6;
+            } else {
+                return 2;
+            }
+        
+        }
+
+        //PRO
         if(Settings::lb_mode == 12) {
             q->ReceiverNextExpectedSeq += size - (expected - seq);
             uint32_t sack_seq, sack_len;
@@ -798,6 +879,14 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
             cnp = true;    // XXX: out-of-order should accompany with CNP (?) TODO: Check on CX6
             return 2;      // generate SACK
         }
+        if (Settings::lb_mode == 14) {
+            if(q->m_pro_sack_.blockExists(seq, size) && Simulator::Now() < q->m_nackTimer) {
+                return 4;
+            }
+            q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
+            q->m_irn_sack_.sack(seq, size);
+            return 2;
+        }
         if(Settings::lb_mode == 12) {
             if(q->m_pro_sack_.blockExists(seq, size) && Simulator::Now() < q->m_nackTimer) {
                 return 4;
@@ -835,7 +924,15 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
                 return 2;  // Still in loss recovery mode of IRN
             }
         }
-
+        //REPS
+        if (Settings::lb_mode == 14) {
+            if(q->m_irn_sack_.IsEmpty()) {
+                return 6;
+            } else {
+                return 2;
+            }
+        }
+        //PRO
         if(Settings::lb_mode == 12) {
             if(q->m_pro_sack_.IsEmpty()) {
                 return 6;
@@ -1023,6 +1120,9 @@ void RdmaHw::PktSent(Ptr<RdmaQueuePair> qp, Ptr<Packet> pkt, Time interframeGap)
 void RdmaHw::HandleTimeout(Ptr<RdmaQueuePair> qp, Time rto) {
     // Assume Outstanding Packets are lost
     // std::cerr << "Timeout on qp=" << qp << std::endl;
+    //std::cout << "Timeout on qp=" << qp << std::endl;
+    //std::cout << "rtt" << qp->lastPktRtt << std::endl;
+
     if (qp->IsFinished()) {
         return;
     }
@@ -1039,6 +1139,17 @@ void RdmaHw::HandleTimeout(Ptr<RdmaQueuePair> qp, Time rto) {
 
     if (qp->irn.m_enabled) qp->irn.m_recovery = true;
 
+    if (Settings:: lb_mode == 14) {
+        // TODO:根据 RTT 判断是拥塞还是丢包，重传然后进入freezing状态
+        
+        if (qp->lastPktRtt > dev->repsRouting.GetlfRtt()) { //congestion
+            
+        } else { //lost packet
+            dev->repsRouting.OnFailureDetection();
+        }
+        
+        //qp->irn.m_recovery = true;
+    }
     RecoverQueue(qp);
     dev->TriggerTransmit();
 }

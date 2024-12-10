@@ -108,6 +108,7 @@ lb_modes = {
     "letflow": 6,
     "conweave": 9,
     "pro": 12,
+    "reps": 14,
 }
 
 topo2bdp = {

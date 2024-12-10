@@ -1,0 +1,290 @@
+Waf: Entering directory `/root/ns-3.19/build'
+Waf: Leaving directory `/root/ns-3.19/build'
+'build' finished successfully (1.253s)
+TOPOLOGY_FILE			config/leaf_spine_128_100G_OS2.txt
+FLOW_FILE			config/L_25.00_CDF_AliStorage2019_N_128_T_100ms_B_100_flow.txt
+FLOW_INPUT_FILE			mix/output/13489597/13489597_in.txt
+CNP_OUTPUT_FILE			mix/output/13489597/13489597_out_cnp.txt
+FCT_OUTPUT_FILE		mix/output/13489597/13489597_out_fct.txt
+PFC_OUTPUT_FILE				mix/output/13489597/13489597_out_pfc.txt
+QLEN_MON_FILE				mix/output/13489597/13489597_out_qlen.txt
+VOQ_MON_FILE				mix/output/13489597/13489597_out_voq.txt
+VOQ_MON_DETAIL_FILE				mix/output/13489597/13489597_out_voq_per_dst.txt
+UPLINK_MON_FILE				mix/output/13489597/13489597_out_uplink.txt
+CONN_MON_FILE				mix/output/13489597/13489597_out_conn.txt
+EST_ERROR_MON_FILE			mix/output/13489597/13489597_out_est_error.txt
+QLEN_MON_START				2
+QLEN_MON_END				2
+SW_MONITORING_INTERVAL			10000
+FLOWGEN_START_TIME		2
+FLOWGEN_STOP_TIME		2.1
+BUFFER_SIZE				9
+CC_MODE		1
+LB_MODE			9
+ENABLE_PFC			Yes
+ENABLE_IRN		0
+CONWEAVE_TX_EXPIRY_TIME			+300000.0ns
+CONWEAVE_REPLY_TIMEOUT_EXTRA			+4000.0ns
+CONWEAVE_PATH_PAUSE_TIME			+16000.0ns
+CONWEAVE_EXTRA_VOQ_FLUSH_TIME			+16000.0ns
+CONWEAVE_DEFAULT_VOQ_WAITING_TIME			+200000.0ns
+ALPHA_RESUME_INTERVAL		1
+RATE_DECREASE_INTERVAL		4
+CLAMP_TARGET_RATE		No
+RP_TIMER			300
+FAST_RECOVERY_TIMES		1
+EWMA_GAIN			0.00390625
+RATE_AI				40.0Mb/s
+RATE_HAI			100.0Mb/s
+MIN_RATE		100Mb/s
+DCTCP_RATE_AI				1000Mb/s
+ERROR_RATE_PER_LINK		0
+L2_CHUNK_SIZE			4000
+L2_ACK_INTERVAL			1
+L2_BACK_TO_ZERO			No
+RATE_BOUND		1
+HAS_WIN		0
+VAR_WIN		0
+FAST_REACT		0
+MI_THRESH		0
+INT_MULTI				1
+GLOBAL_T		1
+U_TARGET		0.95
+MULTI_RATE				0
+SAMPLE_FEEDBACK				0
+ENABLE_QCN			Yes
+USE_DYNAMIC_PFC_THRESHOLD	Yes
+PACKET_PAYLOAD_SIZE		1000
+LINK_DOWN				0 0 0
+KMAX_MAP				 20000000000 400 50000000000 400 100000000000 400 200000000000 400 250000000000 400 400000000000 400
+KMIN_MAP				 20000000000 100 50000000000 100 100000000000 100 200000000000 100 250000000000 100 400000000000 100
+PMAX_MAP				 20000000000 0 50000000000 0 100000000000 0.2 200000000000 0.2 250000000000 0.2 400000000000 0.2
+LOAD			50
+RANDOM_SEED			1
+(AVG) NIC RATE: 100000000000
+node_num=144
+maxRtt: 8320, maxBdp: 104000
+Configuring switches
+------------------------------------------
+Running Simulation.
+[Logging] Current time: +2000001403.0ns
+[Logging] Current time: +2001000000.0ns
+[Logging] Current time: +2002000000.0ns
+[Logging] Current time: +2003000000.0ns
+[Logging] Current time: +2004000000.0ns
+[Logging] Current time: +2005000001.0ns
+[Logging] Current time: +2006000000.0ns
+[Logging] Current time: +2007000000.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2007499249.0ns,70(10517),31(562)[17],SEQ:0,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2008000000.0ns
+[Logging] Current time: +2009000000.0ns
+[Logging] Current time: +2010000001.0ns
+[Logging] Current time: +2011000000.0ns
+[Logging] Current time: +2012000000.0ns
+[Logging] Current time: +2013000000.0ns
+[Logging] Current time: +2014000003.0ns
+[Logging] Current time: +2015000000.0ns
+[Logging] Current time: +2016000000.0ns
+[Logging] Current time: +2017000001.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2017071704.0ns,23(11265),126(1300)[17],SEQ:3000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2017087447.0ns,23(11265),126(1300)[17],SEQ:4000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2018000000.0ns
+[Logging] Current time: +2019000001.0ns
+[Logging] Current time: +2020000000.0ns
+[Logging] Current time: +2021000001.0ns
+[Logging] Current time: +2022000001.0ns
+[Logging] Current time: +2023000003.0ns
+[Logging] Current time: +2024000000.0ns
+[Logging] Current time: +2025000000.0ns
+[Logging] Current time: +2026000000.0ns
+[Logging] Current time: +2027000000.0ns
+[Logging] Current time: +2028000002.0ns
+[Logging] Current time: +2029000000.0ns
+[Logging] Current time: +2030000000.0ns
+[Logging] Current time: +2031000000.0ns
+[Logging] Current time: +2032000001.0ns
+[Logging] Current time: +2033000000.0ns
+[Logging] Current time: +2034000000.0ns
+[Logging] Current time: +2035000000.0ns
+[Logging] Current time: +2036000000.0ns
+[Logging] Current time: +2037000000.0ns
+[Logging] Current time: +2038000000.0ns
+[Logging] Current time: +2039000000.0ns
+[Logging] Current time: +2040000000.0ns
+[Logging] Current time: +2041000000.0ns
+[Logging] Current time: +2042000001.0ns
+[Logging] Current time: +2043000000.0ns
+[Logging] Current time: +2044000000.0ns
+[Logging] Current time: +2045000000.0ns
+[Logging] Current time: +2046000002.0ns
+[Logging] Current time: +2047000000.0ns
+[Logging] Current time: +2048000000.0ns
+[Logging] Current time: +2049000000.0ns
+[Logging] Current time: +2050000000.0ns
+[Logging] Current time: +2051000000.0ns
+[Logging] Current time: +2052000001.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2052486684.0ns,17(13893),59(4061)[17],SEQ:26000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2053000001.0ns
+[Logging] Current time: +2054000000.0ns
+[Logging] Current time: +2055000000.0ns
+[Logging] Current time: +2056000000.0ns
+[Logging] Current time: +2057000001.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2057642871.0ns,29(14259),77(4448)[17],SEQ:0,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2057656274.0ns,29(14259),77(4448)[17],SEQ:3000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2058000000.0ns
+[Logging] Current time: +2059000001.0ns
+[Logging] Current time: +2060000002.0ns
+[Logging] Current time: +2061000001.0ns
+[Logging] Current time: +2062000000.0ns
+[Logging] Current time: +2063000000.0ns
+[Logging] Current time: +2064000000.0ns
+[Logging] Current time: +2065000000.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2065195503.0ns,103(14736),41(4952)[17],SEQ:0,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2066000000.0ns
+[Logging] Current time: +2067000000.0ns
+[Logging] Current time: +2068000000.0ns
+[Logging] Current time: +2069000000.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2069771595.0ns,68(15222),40(5263)[17],SEQ:1000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069780890.0ns,68(15222),40(5263)[17],SEQ:1000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069790192.0ns,68(15222),40(5263)[17],SEQ:1000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069799095.0ns,68(15222),40(5263)[17],SEQ:5000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069808320.0ns,68(15222),40(5263)[17],SEQ:7000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069817481.0ns,68(15222),40(5263)[17],SEQ:9000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069826419.0ns,68(15222),40(5263)[17],SEQ:11000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069836033.0ns,68(15222),40(5263)[17],SEQ:13000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069845296.0ns,68(15222),40(5263)[17],SEQ:15000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069854021.0ns,68(15222),40(5263)[17],SEQ:17000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069863654.0ns,68(15222),40(5263)[17],SEQ:19000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069872631.0ns,68(15222),40(5263)[17],SEQ:20000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069881454.0ns,68(15222),40(5263)[17],SEQ:21000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069890403.0ns,68(15222),40(5263)[17],SEQ:22000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069899878.0ns,68(15222),40(5263)[17],SEQ:24000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069912844.0ns,68(15222),40(5263)[17],SEQ:26000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2069923825.0ns,68(15222),40(5263)[17],SEQ:28000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2070000000.0ns
+[Logging] Current time: +2071000000.0ns
+[Logging] Current time: +2072000001.0ns
+[Logging] Current time: +2073000001.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2073885230.0ns,108(15412),28(5599)[17],SEQ:10000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2073897220.0ns,108(15412),28(5599)[17],SEQ:12000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2074000000.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2074454662.0ns,100(15576),46(5747)[17],SEQ:0,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074463683.0ns,100(15576),46(5747)[17],SEQ:1000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074474469.0ns,100(15576),46(5747)[17],SEQ:3000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074483285.0ns,100(15576),46(5747)[17],SEQ:4000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074491010.0ns,100(15576),46(5747)[17],SEQ:7000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074500304.0ns,100(15576),46(5747)[17],SEQ:8000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074509503.0ns,100(15576),46(5747)[17],SEQ:9000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074518720.0ns,100(15576),46(5747)[17],SEQ:10000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2074529130.0ns,100(15576),46(5747)[17],SEQ:11000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2075000000.0ns
+[Logging] Current time: +2076000000.0ns
+[Logging] Current time: +2077000000.0ns
+[Logging] Current time: +2078000000.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2078923762.0ns,16(15990),44(5892)[17],SEQ:17000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078929045.0ns,16(15990),44(5892)[17],SEQ:19000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078938385.0ns,16(15990),44(5892)[17],SEQ:20000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078947410.0ns,16(15990),44(5892)[17],SEQ:22000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078956802.0ns,16(15990),44(5892)[17],SEQ:23000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078965878.0ns,16(15990),44(5892)[17],SEQ:24000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078975324.0ns,16(15990),44(5892)[17],SEQ:25000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078984166.0ns,16(15990),44(5892)[17],SEQ:26000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2078993466.0ns,16(15990),44(5892)[17],SEQ:27000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2079000001.0ns
+../src/point-to-point/model/conweave-routing.cc(728):+2079002675.0ns,16(15990),44(5892)[17],SEQ:28000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079011747.0ns,16(15990),44(5892)[17],SEQ:29000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079021066.0ns,16(15990),44(5892)[17],SEQ:30000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079030043.0ns,16(15990),44(5892)[17],SEQ:31000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079039273.0ns,16(15990),44(5892)[17],SEQ:32000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079048662.0ns,16(15990),44(5892)[17],SEQ:33000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079058118.0ns,16(15990),44(5892)[17],SEQ:34000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079067032.0ns,16(15990),44(5892)[17],SEQ:35000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079078159.0ns,16(15990),44(5892)[17],SEQ:36000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079086551.0ns,16(15990),44(5892)[17],SEQ:37000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079094541.0ns,16(15990),44(5892)[17],SEQ:38000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079105405.0ns,16(15990),44(5892)[17],SEQ:39000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+../src/point-to-point/model/conweave-routing.cc(728):+2079116971.0ns,16(15990),44(5892)[17],SEQ:40000,ECN:0, New epoch packet arrives, but reordering is in progress. Maybe TxToR made the epoch progress too aggressively. If this is frequent, try to increase `cwh_txExpiryTime` value.
+[Logging] Current time: +2080000000.0ns
+[Logging] Current time: +2081000000.0ns
+[Logging] Current time: +2082000000.0ns
+[Logging] Current time: +2083000004.0ns
+[Logging] Current time: +2084000001.0ns
+[Logging] Current time: +2085000000.0ns
+[Logging] Current time: +2086000000.0ns
+[Logging] Current time: +2087000000.0ns
+[Logging] Current time: +2088000000.0ns
+[Logging] Current time: +2089000000.0ns
+[Logging] Current time: +2090000001.0ns
+[Logging] Current time: +2091000001.0ns
+[Logging] Current time: +2092000000.0ns
+[Logging] Current time: +2093000000.0ns
+[Logging] Current time: +2094000000.0ns
+[Logging] Current time: +2095000000.0ns
+[Logging] Current time: +2096000000.0ns
+[Logging] Current time: +2097000001.0ns
+[Logging] Current time: +2098000000.0ns
+[Logging] Current time: +2099000000.0ns
+*** input flow is over the prefixed number -- flow number : 979410
+*** flow_input.idx : 979410
+*** THIS IS THE LAST FLOW TO SEND :) 
+[Logging] Current time: +2100000000.0ns
+[Logging] Current time: +2101000003.0ns
+[Logging] Current time: +2102000017.0ns
+[Logging] Current time: +2103000000.0ns
+[Logging] Current time: +2104000036.0ns
+[Logging] Current time: +2105000042.0ns
+[Logging] Current time: +2106000003.0ns
+[Logging] Current time: +2107000020.0ns
+[Logging] Current time: +2108000004.0ns
+[Logging] Current time: +2109000010.0ns
+[Logging] Current time: +2110000058.0ns
+[Logging] Current time: +2111000016.0ns
+[Logging] Current time: +2112000014.0ns
+[Logging] Current time: +2113000000.0ns
+[Logging] Current time: +2114000005.0ns
+[Logging] Current time: +2115000024.0ns
+[Logging] Current time: +2116000063.0ns
+[Logging] Current time: +2117000043.0ns
+[Logging] Current time: +2118000011.0ns
+[Logging] Current time: +2119000041.0ns
+[Logging] Current time: +2120000019.0ns
+[Logging] Current time: +2121000019.0ns
+[Logging] Current time: +2122000009.0ns
+[Logging] Current time: +2123000032.0ns
+[Logging] Current time: +2124000042.0ns
+[Logging] Current time: +2125000032.0ns
+[Logging] Current time: +2126000036.0ns
+[Logging] Current time: +2127000005.0ns
+[Logging] Current time: +2128000014.0ns
+[Logging] Current time: +2129000012.0ns
+[Logging] Current time: +2130000026.0ns
+[Logging] Current time: +2131000059.0ns
+[Logging] Current time: +2132000789.0ns
+[Logging] Current time: +2133000002.0ns
+[Logging] Current time: +2134000052.0ns
+[Logging] Current time: +2135000017.0ns
+[Logging] Current time: +2136000954.0ns
+
+*** Simulator is enforced to be finished, finished so far: 979410/ total: 979410, Time:+2136100000.0ns
+
+------ConWeave parameters-----
+Param - extraReplyDeadline:+4000.0ns
+Param - extraVOQFlushTime:+16000.0ns
+Param - txExpiryTime:+300000.0ns
+Param - defaultVOQWaitingTime:+200000.0ns
+Param - pathPauseTime:+16000.0ns
+Param - pathAwareRerouting:1
+
+------------ConWeave History---------------
+Number of INIT's Reply sent (RTT_REPLY):2649089
+Number of Timely RTT_REPLY (INIT's Reply):2170197
+Number of TAIL's Reply Sent (CLEAR):267015
+Number of Timely CLEAR (TAIL's Reply):266995
+Number of NOTIFY Sent:2053798
+Number of Rerouting:281521
+Number of OoO enqueued pkts:5966171
+Number of VOQ Flush Total:144198
+Number of VOQ Flush From History:144198
+Number of VOQ Flush by TAIL:112631
+--------------------------
+36224.3

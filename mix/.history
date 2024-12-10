@@ -1,6 +1,10 @@
 
 
-12/02/24,624235194,1,12,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
-./waf --run 'scratch/network-load-balance /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/624235194/config.txt' > /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/624235194/config.log 2>&1
-./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/624235194/config.txt'
+
+
+
+
+12/10/24,141994885,1,14,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.txt' > /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.txt'
 

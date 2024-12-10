@@ -1,0 +1,11 @@
+Waf: Entering directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+[ 698/1447] cxx: scratch/network-load-balance.cc -> build/scratch/network-load-balance.cc.1.o
+../scratch/network-load-balance.cc: In function ‘void stop_simulation_middle()’:
+../scratch/network-load-balance.cc:581:25: error: ‘NanoSseconds’ was not declared in this scope
+  581 |         Simulator::Stop(NanoSseconds(1));  // finish soon, stop this schedule (NECESSARY!)
+      |                         ^~~~~~~~~~~~
+Waf: Leaving directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+Build failed
+ -> task in 'network-load-balance' failed (exit status 1): 
+	{task 140205790919888: cxx network-load-balance.cc -> network-load-balance.cc.1.o}
+['/usr/bin/g++', '-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing', '-g', '-pthread', '-I.', '-I..', '-I/usr/include/libxml2', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../scratch/network-load-balance.cc', '-c', '-o', 'scratch/network-load-balance.cc.1.o']

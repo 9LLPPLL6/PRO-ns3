@@ -1,4 +1,5 @@
 #include "switch-node.h"
+#include <cstdint>
 
 #include "assert.h"
 #include "ns3/boolean.h"
@@ -16,6 +17,7 @@
 #include "ppp-header.h"
 #include "qbb-net-device.h"
 #include "pro-routing.h"
+#include "src/point-to-point/model/reps-tag.h"
 
 namespace ns3 {
 
@@ -173,6 +175,42 @@ uint32_t SwitchNode::DoLbPro(Ptr<const Packet> p, const CustomHeader &ch,
     return (uint32_t)((uint8_t *)&ProRouting::packet2path[p->GetUid()])[1];
 }
 
+
+/*---------------REPS--------------------------- */
+uint32_t SwitchNode::DoReps(Ptr<const Packet> p, const CustomHeader &ch,
+                            const std::vector<int> &nexthops) {
+    RepsTag repsTag;
+    bool found = p->PeekPacketTag(repsTag);
+    if (found) {
+        union {
+            uint8_t u8[4 + 4 + 2 + 2 + 4 + 2 + 2];
+            uint32_t u32[5];
+            uint16_t u16[2 + 2 + 1 + 1 + 2 + 1 + 1];
+        } buf;
+        buf.u32[0] = ch.sip;
+        buf.u32[1] = ch.dip;
+        if (ch.l3Prot == 0x6)
+            buf.u32[2] = ch.tcp.sport | ((uint32_t)ch.tcp.dport << 16);
+        else if (ch.l3Prot == 0x11)  // XXX RDMA traffic on UDP
+            buf.u32[2] = ch.udp.sport | ((uint32_t)ch.udp.dport << 16);
+        else if (ch.l3Prot == 0xFC || ch.l3Prot == 0xFD)  // ACK or NACK
+            buf.u32[2] = ch.ack.sport | ((uint32_t)ch.ack.dport << 16);
+        else {
+            std::cout << "[ERROR] Sw(" << m_id << ")," << PARSE_FIVE_TUPLE(ch)
+                    << "Cannot support other protoocls than TCP/UDP (l3Prot:" << ch.l3Prot << ")"
+                    << std::endl;
+            assert(false && "Cannot support other protoocls than TCP/UDP");
+        }
+        buf.u32[3] = ch.l3Prot;
+        buf.u16[8] = repsTag.GetEv();
+        uint32_t hashVal = EcmpHash(buf.u8, 18, m_ecmpSeed);
+        uint32_t idx = hashVal % nexthops.size();
+        return nexthops[idx];
+    } else {
+        return DoLbFlowECMP(p, ch, nexthops);
+    }
+}
+
 /*----------------------------------*/
 
 void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex) {
@@ -296,6 +334,8 @@ int SwitchNode::GetOutDev(Ptr<Packet> p, CustomHeader &ch) {
             return DoLbConWeave(p, ch, nexthops); /** DUMMY: Do ECMP */
         case 12:
             return DoLbPro(p, ch, nexthops);
+        case 14:
+            return DoReps(p, ch, nexthops);
         default:
             std::cout << "Unknown lb_mode(" << Settings::lb_mode << ")" << std::endl;
             assert(false);

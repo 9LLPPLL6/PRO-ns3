@@ -1,0 +1,39 @@
+Waf: Entering directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+[ 448/1462] install-ns3-header: src/ospf/model/ipv4-ospf-routing.h -> build/ns3/ipv4-ospf-routing.h
+[ 704/1462] cxx: scratch/network-load-balance.cc -> build/scratch/network-load-balance.cc.1.o
+[ 705/1462] cxx: scratch/ospf_linkdown.cc -> build/scratch/ospf_linkdown.cc.2.o
+[ 823/1462] cxx: src/ospf/helper/ipv4-ospf-routing-helper.cc -> build/src/ospf/helper/ipv4-ospf-routing-helper.cc.1.o
+[ 826/1462] cxx: src/ospf/model/ipv4-ospf-routing.cc -> build/src/ospf/model/ipv4-ospf-routing.cc.1.o
+[1176/1462] cxx: src/internet/model/ipv4-list-routing.cc -> build/src/internet/model/ipv4-list-routing.cc.1.o
+../src/ospf/model/ipv4-ospf-routing.cc: In function ‘void ns3::setNbr2If(std::map<ns3::Ptr<ns3::Node>, std::map<ns3::Ptr<ns3::Node>, bool> >)’:
+../src/ospf/model/ipv4-ospf-routing.cc:643:3: error: invalid use of ‘this’ in non-member function
+  643 |   this->nbr2if = nbr2if;
+      |   ^~~~
+../src/ospf/model/ipv4-ospf-routing.cc: In function ‘const std::map<ns3::Ptr<ns3::Node>, std::map<ns3::Ptr<ns3::Node>, bool> >& ns3::getNbr2If()’:
+../src/ospf/model/ipv4-ospf-routing.cc:647:10: error: invalid use of ‘this’ in non-member function
+  647 |   return this->nbr2if;
+      |          ^~~~
+../scratch/network-load-balance.cc: In function ‘void initLSAs()’:
+../scratch/network-load-balance.cc:742:56: error: cannot convert ‘map<unsigned int,vector<unsigned int>>’ to ‘map<int,vector<short unsigned int>>’
+  742 |         n.Get(i)->GetObject<Ipv4OSPFRouting>()->setLSA(LSAs);
+      |                                                        ^~~~
+      |                                                        |
+      |                                                        map<unsigned int,vector<unsigned int>>
+In file included from ./ns3/ipv4-ospf-routing-helper.h:29,
+                 from ../scratch/network-load-balance.cc:52:
+./ns3/ipv4-ospf-routing.h:144:43: note:   initializing argument 1 of ‘void ns3::Ipv4OSPFRouting::setLSA(std::map<int, std::vector<short unsigned int> >)’
+  144 |   void setLSA(map<int, vector<uint16_t> > lsas){
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~
+../scratch/network-load-balance.cc: In function ‘int main(int, char**)’:
+../scratch/network-load-balance.cc:1298:59: error: cannot convert ‘map<[...],map<[...],Interface>>’ to ‘map<[...],map<[...],bool>>’
+ 1298 |             node->GetObject<Ipv4OSPFRouting>()->setNbr2If(nbr2if);
+      |                                                           ^~~~~~
+      |                                                           |
+      |                                                           map<[...],map<[...],Interface>>
+In file included from ./ns3/ipv4-ospf-routing-helper.h:29,
+                 from ../scratch/network-load-balance.cc:52:
+./ns3/ipv4-ospf-routing.h:150:55: note:   initializing argument 1 of ‘void ns3::Ipv4OSPFRouting::setNbr2If(std::map<ns3::Ptr<ns3::Node>, std::map<ns3::Ptr<ns3::Node>, bool> >)’
+  150 |   void setNbr2If(map<Ptr<Node>, map<Ptr<Node>, bool>> nbr2if);
+      |                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+Waf: Leaving directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+Interrupted 

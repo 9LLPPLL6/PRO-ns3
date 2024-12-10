@@ -1,0 +1,30 @@
+Waf: Entering directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+[ 698/1447] cxx: scratch/network-load-balance.cc -> build/scratch/network-load-balance.cc.1.o
+../scratch/network-load-balance.cc: In function ‘int main(int, char**)’:
+../scratch/network-load-balance.cc:1685:33: error: ‘begin’ was not declared in this scope; did you mean ‘std::begin’?
+ 1685 |                     for(auto d: c) {
+      |                                 ^
+      |                                 std::begin
+In file included from /usr/include/c++/11/vector:69,
+                 from ./ns3/application-container.h:25,
+                 from ./ns3/rdma-client-helper.h:24,
+                 from ../scratch/network-load-balance.cc:22:
+/usr/include/c++/11/bits/range_access.h:90:5: note: ‘std::begin’ declared here
+   90 |     begin(_Tp (&__arr)[_Nm]) noexcept
+      |     ^~~~~
+../scratch/network-load-balance.cc:1685:33: error: ‘end’ was not declared in this scope; did you mean ‘std::end’?
+ 1685 |                     for(auto d: c) {
+      |                                 ^
+      |                                 std::end
+In file included from /usr/include/c++/11/vector:69,
+                 from ./ns3/application-container.h:25,
+                 from ./ns3/rdma-client-helper.h:24,
+                 from ../scratch/network-load-balance.cc:22:
+/usr/include/c++/11/bits/range_access.h:100:5: note: ‘std::end’ declared here
+  100 |     end(_Tp (&__arr)[_Nm]) noexcept
+      |     ^~~
+Waf: Leaving directory `/home/lpl/ns-allinone-3.19/ns-3.19/build'
+Build failed
+ -> task in 'network-load-balance' failed (exit status 1): 
+	{task 140126586125456: cxx network-load-balance.cc -> network-load-balance.cc.1.o}
+['/usr/bin/g++', '-O3', '-g', '-std=gnu++11', '-march=native', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing', '-g', '-pthread', '-I.', '-I..', '-I/usr/include/libxml2', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../scratch/network-load-balance.cc', '-c', '-o', 'scratch/network-load-balance.cc.1.o']

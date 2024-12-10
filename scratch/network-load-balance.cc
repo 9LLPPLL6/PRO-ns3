@@ -42,9 +42,11 @@
 #include "ns3/internet-module.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/letflow-routing.h"
+#include "ns3/node.h"
 #include "ns3/packet.h"
 #include "ns3/point-to-point-helper.h"
 #include "ns3/pro-routing.h"
+#include "ns3/ptr.h"
 #include "ns3/qbb-helper.h"
 #include "ns3/qbb-net-device.h"
 #include "ns3/rdma-hw.h"
@@ -681,22 +683,23 @@ void SetRoutingEntries() {
  * @brief take down the link between a and b, and redo the routing
  */
 void TakeDownLink(NodeContainer n, Ptr<Node> a, Ptr<Node> b) {
+    std::cout << "Take down link between " << a->GetId() << " and " << b->GetId() << std::endl;
     if (!nbr2if[a][b].up) return;
     // take down link between a and b
     nbr2if[a][b].up = nbr2if[b][a].up = false;
-    nextHop.clear();
-    CalculateRoutes(n);
-    // clear routing tables
-    for (uint32_t i = 0; i < n.GetN(); i++) {
-        if (n.Get(i)->GetNodeType() == 1)
-            DynamicCast<SwitchNode>(n.Get(i))->ClearTable();
-        else
-            n.Get(i)->GetObject<RdmaDriver>()->m_rdma->ClearTable();
-    }
+    // nextHop.clear();
+    // CalculateRoutes(n);
+    // // clear routing tables
+    // for (uint32_t i = 0; i < n.GetN(); i++) {
+    //     if (n.Get(i)->GetNodeType() == 1)
+    //         DynamicCast<SwitchNode>(n.Get(i))->ClearTable();
+    //     else
+    //         n.Get(i)->GetObject<RdmaDriver>()->m_rdma->ClearTable();
+    // }
     DynamicCast<QbbNetDevice>(a->GetDevice(nbr2if[a][b].idx))->TakeDown();
     DynamicCast<QbbNetDevice>(b->GetDevice(nbr2if[b][a].idx))->TakeDown();
     // reset routing table
-    SetRoutingEntries();
+    //SetRoutingEntries();
 
     // redistribute qp on each host
     for (uint32_t i = 0; i < n.GetN(); i++) {
@@ -1495,7 +1498,7 @@ int main(int argc, char *argv[]) {
 
     /* config load balancer's switches using ToR-to-ToR routing */
     if (lb_mode == 3 || lb_mode == 6 || lb_mode == 9 ||
-        lb_mode == 12) {  // Conga, Letflow, Conweave, Pro
+        lb_mode == 12 || lb_mode == 14) {  // Conga, Letflow, Conweave, Pro, REPS
         NS_LOG_INFO("Configuring Load Balancer's Switches");
         for (auto &pair : link_pairs) {
             Ptr<Node> probably_host = n.Get(pair.first);
@@ -1693,6 +1696,25 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        if (Settings::lb_mode == 14) {
+            for (int i = 0; i < n.GetN(); i++) {
+                if (n.Get(i)->GetNodeType() == 0) { //server
+                    Ptr<Node> node = n.Get(i);
+                    for (int j = 0; j < node->GetNDevices(); j++) {
+                        Ptr<NetDevice> dev = node->GetDevice(j);
+                        if (dev->IsQbb()) {
+                            Ptr<QbbNetDevice> qbbDev = DynamicCast<QbbNetDevice>(dev);
+                            qbbDev->repsRouting.SetExploreCounter(irn_bdp_lookup / 1520);
+                            qbbDev->repsRouting.SetNumPktsBdp(irn_bdp_lookup / 1520);
+
+                        }
+                        
+                    }
+                }
+                
+            }
+        }
+
         //debug paths
         // for(auto a: ProRouting::paths) {
         //     for(auto b: a.second) {
@@ -1797,10 +1819,35 @@ int main(int argc, char *argv[]) {
     topof.close();
 
     // schedule link down
-    if (link_down_time > 0) {
-        Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
-                            &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
-    }
+    // if (link_down_time > 0) {
+    // if (true) {
+    //     link_down_A = 128;
+    //     link_down_B = 136;
+    //     link_down_time = 100;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 140;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 141;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 142;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 143;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 137;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 138;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    //     link_down_B = 139;
+    //     Simulator::Schedule(Seconds(flowgen_start_time) + MicroSeconds(link_down_time),
+    //                         &TakeDownLink, n, n.Get(link_down_A), n.Get(link_down_B));
+    // }
 
     if (lb_mode == 9 || lb_mode == 12 || lb_mode == 0) {
         voq_output = fopen(voq_mon_file.c_str(), "w");                // specific to ConWeave, pro, fecmp

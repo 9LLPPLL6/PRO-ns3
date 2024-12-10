@@ -6,9 +6,12 @@
 #include <ns3/rdma.h>
 #include <ns3/selective-packet-queue.h>
 
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "ns3/packet.h"
+#include "ns3/ptr.h"
 #include "qbb-net-device.h"
 #include "rdma-queue-pair.h"
 

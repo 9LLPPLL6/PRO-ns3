@@ -263,6 +263,7 @@ void QbbNetDevice::DequeueAndTransmit(void) {
         if (qIndex != -1024) {
             if (qIndex == -1) {  // high prio
                 p = m_rdmaEQ->DequeueQindex(qIndex);
+
                 if(Settings::lb_mode == 12) {  //pro
                     CustomHeader ch(CustomHeader::L2_Header | CustomHeader::L3_Header |
                                     CustomHeader::L4_Header);
@@ -287,6 +288,12 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                     }
                     p->AddHeader(ch);
                 }
+
+                //REPS
+                if (Settings::lb_mode == 14) {
+                    p = repsRouting.OnSend(p);
+                }
+
                 m_traceDequeue(p, 0);
                 TransmitStart(p);
                 return;
@@ -320,6 +327,11 @@ void QbbNetDevice::DequeueAndTransmit(void) {
                     }
                 }
                 p->AddHeader(ch);
+            }
+
+            //REPS
+            if (Settings::lb_mode == 14) {
+                p = repsRouting.OnSend(p);
             }
 
             // transmit

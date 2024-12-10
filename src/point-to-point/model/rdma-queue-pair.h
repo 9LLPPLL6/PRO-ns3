@@ -11,6 +11,7 @@
 #include <ns3/selective-packet-queue.h>
 
 #include <climits> /* for CHAR_BIT */
+#include <cstdint>
 #include <vector>
 
 #define BITMASK(b) (1 << ((b) % CHAR_BIT))
@@ -93,6 +94,7 @@ class RdmaQueuePair : public Object {
     uint32_t lastPktSize;
     int32_t m_flow_id;
     Time m_timeout;
+    uint64_t lastPktRtt = 0; // ns
     uint32_t pathIndex = 0;
 
     /******************************

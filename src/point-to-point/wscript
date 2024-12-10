@@ -29,6 +29,8 @@ def build(bld):
         'model/conweave-voq.cc',
         'helper/selective-packet-queue.cc',
         'model/pro-routing.cc',
+        'model/reps-routing.cc',
+        'model/reps-tag.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('point-to-point')
@@ -66,6 +68,8 @@ def build(bld):
         'model/conweave-voq.h',
         'helper/selective-packet-queue.h',
         'model/pro-routing.h',
+        'model/reps-routing.h',
+        'model/reps-tag.h',
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):
