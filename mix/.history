@@ -8,3 +8,11 @@
 ./waf --run 'scratch/network-load-balance /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.txt' > /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.log 2>&1
 ./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/141994885/config.txt'
 
+12/11/24,885236683,1,0,1000,4,16,64,400,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/885236683/config.txt' > /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/885236683/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/885236683/config.txt'
+
+12/11/24,120970483,1,9,300,4,16,16,200,1,0,0,0,leaf_spine_128_100G_OS2,100,AliStorage2019,50,0.1
+./waf --run 'scratch/network-load-balance /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/120970483/config.txt' > /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/120970483/config.log 2>&1
+./waf --run 'scratch/network-load-balance' --command-template='gdb --args %s /home/lpl/ns-allinone-3.19/ns-3.19/mix/output/120970483/config.txt'
+

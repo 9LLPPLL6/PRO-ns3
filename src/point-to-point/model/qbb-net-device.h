@@ -31,6 +31,7 @@
 #include "ns3/udp-header.h"
 #include "ns3/rdma-queue-pair.h"
 #include "src/point-to-point/model/reps-routing.h"
+#include <cstdint>
 #include <vector>
 #include<map>
 #include <unordered_map>
@@ -217,6 +218,7 @@ public:
 
 	TracedCallback<Ptr<const Packet>, Ptr<RdmaQueuePair> > m_traceQpDequeue; // the trace for printing dequeue
   RepsRouting repsRouting;
+  uint32_t pro_c = 0;
 };
 
 } // namespace ns3

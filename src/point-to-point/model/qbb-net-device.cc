@@ -586,8 +586,8 @@ void QbbNetDevice::calc_path(unsigned qIndex, uint32_t span, uint32_t size) {
     if (qp->pathIndex != 0) {  // is inited
         qp->pathIndex = (qp->pathIndex + span) % size;
     } else {  // not inited
-        qp->pathIndex = ProRouting::pro_c % size;
+        qp->pathIndex = pro_c % size;
     }
-    ProRouting::pro_c = qp->pathIndex + 1;
+    pro_c = qp->pathIndex + 1;
 }
 }  // namespace ns3
